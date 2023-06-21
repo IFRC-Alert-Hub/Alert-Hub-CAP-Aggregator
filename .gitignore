@@ -102,7 +102,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+capaggregator/.env
 .venv
 env/
 venv/

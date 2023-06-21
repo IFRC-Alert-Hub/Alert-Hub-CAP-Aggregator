@@ -1,11 +1,15 @@
+import json
+
 import requests
 import xml.etree.ElementTree as ET
 
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.template import loader
-from .models import Alert
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
+from .models import Alert
+from .tasks import add
 
 
 def index(request):
@@ -49,3 +53,19 @@ def getAlert(url, ns):
         alert.geocode_name = geocode.find('atom:valueName', ns).text
         alert.geocode_value = geocode.find('atom:value', ns).text
         alert.save()
+
+def polling_alerts(request):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=60,
+        period=IntervalSchedule.SECONDS,
+    )
+    PeriodicTask.objects.create(
+        interval=schedule,  # we created this above.
+        name='Polling Every One Minutes',  # simply describes this periodic task.
+        task='cap_feed.tasks.getAlerts',  # name of task.
+        args=json.dumps(['arg1', 'arg2']),
+        kwargs=json.dumps({
+            'be_careful': True,
+        }),
+    )
+    return HttpResponse("Done")
