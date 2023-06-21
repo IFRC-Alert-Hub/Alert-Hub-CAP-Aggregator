@@ -18,8 +18,9 @@ class Alert(models.Model):
 
     area_desc = models.CharField(max_length=255)
     event = models.CharField(max_length=255)
-    geocode_name = models.CharField(max_length=255)
-    geocode_value = models.CharField(max_length=255)
+    geocode_name = models.CharField(max_length=255, blank=True, default='')
+    geocode_value = models.CharField(max_length=255, blank=True, default='')
+    polygon = models.TextField(max_length=16383, blank=True, default='')
 
     def __str__(self):
         return self.id
