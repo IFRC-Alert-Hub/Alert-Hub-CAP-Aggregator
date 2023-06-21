@@ -147,7 +147,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = 'amqp://localhost:5672'
+CELERY_BROKER_URL = 'amqp://20.49.181.17:5672'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 
