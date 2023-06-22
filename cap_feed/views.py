@@ -13,9 +13,8 @@ with open('cap_feed/region.json') as file:
 
 region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723 -2.6920536197633442", "117.78896429869648 -3.1783208418475954", "30.64725652750233 45.572165430308736", "21.18749859869599 31.264366696701767"]
 
-count = 0
-
 def saveRegions():
+    count = 0
     for region_entry in data:
         region = Region()
         region.id = region_entry["id"]
