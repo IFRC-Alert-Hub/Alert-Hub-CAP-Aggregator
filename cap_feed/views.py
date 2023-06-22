@@ -4,7 +4,27 @@ import xml.etree.ElementTree as ET
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.template import loader
-from .models import Alert
+from .models import Alert, Region, Country
+
+
+import json
+with open('cap_feed/region.json') as file:
+    data = json.load(file)
+
+region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723 -2.6920536197633442", "117.78896429869648 -3.1783208418475954", "30.64725652750233 45.572165430308736", "21.18749859869599 31.264366696701767"]
+
+count = 0
+
+for region_entry in data:
+    region = Region()
+    region.id = region_entry["id"]
+    region.name = region_entry["region_name"]
+    coordinates = region_entry["bbox"]["coordinates"][0]
+    for coordinate in coordinates:
+        region.polygon += str(coordinates[0]) + "," + str(coordinates[1]) + " "
+    region.centroid = region_centroids[count]
+    count += 1
+    region.save()
 
 
 

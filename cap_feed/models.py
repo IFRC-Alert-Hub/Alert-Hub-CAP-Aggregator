@@ -24,3 +24,23 @@ class Alert(models.Model):
 
     def __str__(self):
         return self.id
+
+class Region(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=255)
+    polygon = models.TextField(max_length=16383, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.id
+
+class Country(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=255)
+    iso = models.CharField(max_length=255, blank = True, default='')
+    iso3 = models.CharField(max_length=255, blank = True, default='')
+    polygon = models.TextField(max_length=16383, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.id
