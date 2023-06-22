@@ -1,3 +1,4 @@
+'''
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 
@@ -43,7 +44,5 @@ def getAlert(url, ns):
         alert.geocode_value = geocode.find('atom:value', ns).text
         alert.save()
 
-@shared_task
-def add(x, y):
-    return x + y
 
+'''
