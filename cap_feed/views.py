@@ -9,7 +9,6 @@ from django.template import loader
 #from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 from .models import Alert
-from .tasks import add
 
 
 def index(request):
