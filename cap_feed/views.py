@@ -13,6 +13,21 @@ with open('cap_feed/region.json') as file:
 
 region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723 -2.6920536197633442", "117.78896429869648 -3.1783208418475954", "30.64725652750233 45.572165430308736", "21.18749859869599 31.264366696701767"]
 
+
+
+
+
+def index(request):
+    getAlerts()
+    saveRegions()
+    latest_alert_list = Alert.objects.order_by("-sent")[:10]
+    template = loader.get_template("cap_feed/index.html")
+    context = {
+        "latest_alert_list": latest_alert_list,
+    }
+    return HttpResponse(template.render(context, request))
+
+
 def saveRegions():
     count = 0
     for region_entry in data:
@@ -25,18 +40,6 @@ def saveRegions():
         region.centroid = region_centroids[count]
         count += 1
         region.save()
-
-
-
-def index(request):
-    getAlerts()
-    latest_alert_list = Alert.objects.order_by("-sent")[:10]
-    template = loader.get_template("cap_feed/index.html")
-    context = {
-        "latest_alert_list": latest_alert_list,
-    }
-    return HttpResponse(template.render(context, request))
-
 
 # sources = [
 #     ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
