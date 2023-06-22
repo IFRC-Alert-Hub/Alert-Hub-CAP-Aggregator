@@ -15,16 +15,17 @@ region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723
 
 count = 0
 
-for region_entry in data:
-    region = Region()
-    region.id = region_entry["id"]
-    region.name = region_entry["region_name"]
-    coordinates = region_entry["bbox"]["coordinates"][0]
-    for coordinate in coordinates:
-        region.polygon += str(coordinates[0]) + "," + str(coordinates[1]) + " "
-    region.centroid = region_centroids[count]
-    count += 1
-    region.save()
+def saveRegions():
+    for region_entry in data:
+        region = Region()
+        region.id = region_entry["id"]
+        region.name = region_entry["region_name"]
+        coordinates = region_entry["bbox"]["coordinates"][0]
+        for coordinate in coordinates:
+            region.polygon += str(coordinates[0]) + "," + str(coordinates[1]) + " "
+        region.centroid = region_centroids[count]
+        count += 1
+        region.save()
 
 
 
