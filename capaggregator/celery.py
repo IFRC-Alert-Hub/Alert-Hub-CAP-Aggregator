@@ -6,10 +6,12 @@ from django.conf import settings
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
-# Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.settings')
-
+if 'WEBSITE_HOSTNAME' not in os.environ:
+    load_dotenv(".env")
+    # Set the default Django settings module for the 'celery' program.
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.settings')
+else:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.production')
 app = Celery('capaggregator')
 
 app.conf.beat_schedule = {
