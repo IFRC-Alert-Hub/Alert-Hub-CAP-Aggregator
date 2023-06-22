@@ -1,12 +1,25 @@
 import graphene
 from graphene_django import DjangoObjectType #used to change Django object into a format that is readable by GraphQL
-from cap_feed.models import Alert
+from cap_feed.models import Alert, Region, Country
 
 class AlertType(DjangoObjectType):
     # Describe the data that is to be formatted into GraphQL fields
     class Meta:
         model = Alert
-        field = ("id", "identifier", "sender", "sent", "status", "msg_type", "scope", "urgency", "severity", "certainty", "expires", "area_desc", "event", "geocode_name", "geocode_value")
+        field = ("id", "identifier", "sender", "sent", "status", "msg_type", "scope", "urgency", "severity", "certainty", "expires", "area_desc", "event", "geocode_name", "geocode_value", "polygon")
+
+class RegionType(DjangoObjectType):
+    # Describe the data that is to be formatted into GraphQL fields
+    class Meta:
+        model = Region
+        field = ("id", "name", "polygon", "centroid")
+
+class CountryType(DjangoObjectType):
+    # Describe the data that is to be formatted into GraphQL fields
+    class Meta:
+        model = Country
+        field = ("id", "name", "iso", "iso3", "polygon", "centroid")
+
 
 class Query(graphene.ObjectType):
     #query ContactType to get list of contacts
