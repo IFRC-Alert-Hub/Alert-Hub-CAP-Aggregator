@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - cap-aggregator
 on:
   push:
     branches:
-      - develop
+      - celery-test
   workflow_dispatch:
 
 jobs:
