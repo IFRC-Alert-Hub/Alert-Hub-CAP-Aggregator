@@ -22,11 +22,20 @@ class CountryType(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    #query ContactType to get list of contacts
     list_alert=graphene.List(AlertType)
+    list_country=graphene.List(CountryType)
+    list_region=graphene.List(RegionType)
 
     def resolve_list_alert(root, info):
         # We can easily optimize query count in the resolve method
-        return Alert.objects.order_by("-sent")[:20]
+        return Alert.objects.order_by("-id")
+    
+    def resolve_list_country(root, info):
+        # We can easily optimize query count in the resolve method
+        return Country.objects.order_by("-id")
+    
+    def resolve_list_region(root, info):
+        # We can easily optimize query count in the resolve method
+        return Region.objects.order_by("-id")
 
 schema = graphene.Schema(query=Query)
