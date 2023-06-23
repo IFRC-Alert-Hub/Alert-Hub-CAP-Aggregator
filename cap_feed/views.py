@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.template import loader
 from .models import Alert, Region, Country
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 
 import json
@@ -12,8 +13,6 @@ with open('cap_feed/region.json') as file:
     data = json.load(file)
 
 region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723 -2.6920536197633442", "117.78896429869648 -3.1783208418475954", "30.64725652750233 45.572165430308736", "21.18749859869599 31.264366696701767"]
-
-
 
 
 
@@ -41,10 +40,6 @@ def saveRegions():
         count += 1
         region.save()
 
-# sources = [
-#     ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-#     ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-croatia", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-#     ]
 
 sources = [
         ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
@@ -118,4 +113,22 @@ def get_alert_capfeedphp(url, ns):
         entry_content_alert_info_area = entry_content_alert_info.find('cap:area', ns)
         alert.area_desc = entry_content_alert_info_area.find('cap:areaDesc', ns).text
         alert.polygon = entry_content_alert_info_area.find('cap:polygon', ns).text
+
         alert.save()
+
+def polling_alerts(request):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=60,
+        period=IntervalSchedule.SECONDS,
+    )
+    PeriodicTask.objects.create(
+        interval=schedule,  # we created this above.
+        name='Polling Every One Minutes',  # simply describes this periodic task.
+        task='cap_feed.tasks.getAlerts',  # name of task.
+        args=json.dumps(['arg1', 'arg2']),
+        kwargs=json.dumps({
+            'be_careful': True,
+       }),
+    )
+    return HttpResponse("Done")
+
