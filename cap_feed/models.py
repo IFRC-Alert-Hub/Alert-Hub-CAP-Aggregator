@@ -32,15 +32,16 @@ class Region(models.Model):
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
-        return self.id
+        return self.name
 
 class Country(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
-    iso = models.CharField(max_length=255, blank = True, default='')
-    iso3 = models.CharField(max_length=255, blank = True, default='')
+    iso = models.CharField(max_length=255, blank=True, default='')
+    iso3 = models.CharField(max_length=255, blank=True, default='')
     polygon = models.TextField(max_length=16383, blank=True, default='')
     centroid = models.CharField(max_length=255, blank=True, default='')
+    region = models.ForeignKey(Region, blank=True, on_delete=models.SET_DEFAULT, default='')
 
     def __str__(self):
-        return self.id
+        return self.name
