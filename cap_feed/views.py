@@ -1,3 +1,4 @@
+import json
 import requests
 import xml.etree.ElementTree as ET
 
@@ -6,10 +7,6 @@ from django.http import HttpResponse
 from django.template import loader
 from .models import Alert, Region, Country
 
-
-import json
-with open('cap_feed/region.json') as file:
-    data = json.load(file)
 
 region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723 -2.6920536197633442", "117.78896429869648 -3.1783208418475954", "30.64725652750233 45.572165430308736", "21.18749859869599 31.264366696701767"]
 
@@ -20,6 +17,7 @@ region_centroids = ["17.458740234362434 -2.677413176352464", "-80.83261851536723
 def index(request):
     getAlerts()
     saveRegions()
+    saveCountries()
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
@@ -29,17 +27,45 @@ def index(request):
 
 
 def saveRegions():
-    count = 0
-    for region_entry in data:
-        region = Region()
-        region.id = region_entry["id"]
-        region.name = region_entry["region_name"]
-        coordinates = region_entry["bbox"]["coordinates"][0]
-        for coordinate in coordinates:
-            region.polygon += str(coordinates[0]) + "," + str(coordinates[1]) + " "
-        region.centroid = region_centroids[count]
-        count += 1
-        region.save()
+    with open('cap_feed/region.json') as file:
+        region_data = json.load(file)
+        count = 0
+        for region_entry in region_data:
+            region = Region()
+            region.id = region_entry["id"]
+            region.name = region_entry["region_name"]
+            coordinates = region_entry["bbox"]["coordinates"][0]
+            for coordinate in coordinates:
+                region.polygon += str(coordinate[0]) + "," + str(coordinate[1]) + " "
+            region.centroid = region_centroids[count]
+            count += 1
+            region.save()
+
+
+def saveCountries():
+    with open('cap_feed/country.json') as file:
+        country_data = json.load(file)
+        for country_entry in country_data:
+            country = Country()
+            country.id = country_entry["id"]
+            country.name = country_entry["name"]
+            region_id = country_entry["region"]
+            if ("Region" in country.name) or ("Cluster" in country.name):
+                continue
+            if region_id is not None:
+                country.region = Region.objects.get(id=country_entry["region"])
+                if country_entry["iso"] is not None:
+                    country.iso = country_entry["iso"]
+                if country_entry["iso3"] is not None:
+                    country.iso3 = country_entry["iso3"]
+                if country_entry["bbox"] is not None:
+                    coordinates = country_entry["bbox"]["coordinates"][0]
+                    for coordinate in coordinates:
+                        country.polygon += str(coordinate[0]) + "," + str(coordinate[1]) + " "
+                if country_entry["centroid"] is not None:
+                    coordinates = country_entry["centroid"]["coordinates"]
+                    country.centroid = str(coordinates[0]) + "," + str(coordinates[1])
+                country.save()
 
 # sources = [
 #     ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
