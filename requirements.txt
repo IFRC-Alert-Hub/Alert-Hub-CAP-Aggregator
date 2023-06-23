@@ -17,6 +17,6 @@ sqlparse==0.4.4
 text-unidecode==1.3
 tzdata==2023.3
 urllib3==2.0.3
-whitenoise==6.4.0
+whitenoise==6.5.0
 django-celery-beat==2.5.0
 django-celery-results==2.5.1
