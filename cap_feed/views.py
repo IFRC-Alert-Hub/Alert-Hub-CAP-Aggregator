@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.template import loader
 from .models import Alert, Region, Country
-
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 import json
 with open('cap_feed/region.json') as file:
@@ -116,3 +116,19 @@ def get_alert_capfeedphp(url, ns):
         alert.area_desc = entry_content_alert_info_area.find('cap:areaDesc', ns).text
         alert.polygon = entry_content_alert_info_area.find('cap:polygon', ns).text
         alert.save()
+
+def polling_alerts(request):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=60,
+        period=IntervalSchedule.SECONDS,
+    )
+    PeriodicTask.objects.create(
+        interval=schedule,  # we created this above.
+        name='Polling Every One Minutes',  # simply describes this periodic task.
+        task='cap_feed.tasks.getAlerts',  # name of task.
+        args=json.dumps(['arg1', 'arg2']),
+        kwargs=json.dumps({
+            'be_careful': True,
+       }),
+    )
+    return HttpResponse("Done")
