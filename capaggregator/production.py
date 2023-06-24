@@ -47,6 +47,6 @@ CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 
 CORS_ALLOWED_ORIGINS = [
-    "https://alert-hub-frontend.azurewebsites.net/",
+    "https://alert-hub-frontend.azurewebsites.net",
     "http://localhost:3000",
 ]
