@@ -35,6 +35,7 @@ class Alert(models.Model):
     urgency = models.CharField(max_length=255)
     severity = models.CharField(max_length=255)
     certainty = models.CharField(max_length=255)
+    effective = models.DateTimeField()
     expires = models.DateTimeField()
 
     area_desc = models.CharField(max_length=255)

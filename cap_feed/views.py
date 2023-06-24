@@ -9,7 +9,7 @@ import cap_feed.alert_processing as ap
 
 
 def index(request):
-    ap.injectUnknownRegions()
+    ap.inject_unknown_regions()
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
@@ -24,11 +24,27 @@ def polling_alerts(request):
     )
     PeriodicTask.objects.create(
         interval=schedule,  # we created this above.
-        name='Polling Every One Minutes',  # simply describes this periodic task.
-        task='cap_feed.tasks.getAlerts',  # name of task.
+        name='Polls CAP alerts periodically',  # simply describes this periodic task.
+        task='cap_feed.tasks.get_alerts',  # name of task.
         args=json.dumps(['arg1', 'arg2']),
         kwargs=json.dumps({
             'be_careful': True,
        }),
     )
-    return HttpResponse("Done")
+    return HttpResponse("DONE")
+
+def removing_alerts(request):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=60,
+        period=IntervalSchedule.SECONDS,
+    )
+    PeriodicTask.objects.create(
+        interval=schedule,  # we created this above.
+        name='Removes expired CAP alerts periodically',  # simply describes this periodic task.
+        task='cap_feed.tasks.remove_expired_alerts',  # name of task.
+        args=json.dumps(['arg1', 'arg2']),
+        kwargs=json.dumps({
+            'be_careful': True,
+       }),
+    )
+    return HttpResponse("DONE")
