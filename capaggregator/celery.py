@@ -15,10 +15,7 @@ else:
 app = Celery('capaggregator')
 
 app.conf.beat_schedule = {
-    'polling-alerts-from-feeds-at-1-min':{
-        'task': 'cap_feed.tasks.getAlerts',
-        'schedule': timedelta(minutes=1)
-    }
+
 
 }
 # Using a string here means the worker doesn't have to serialize

@@ -2,7 +2,7 @@ import json
 import requests
 
 import xml.etree.ElementTree as ET
-from .models import Alert, Region, Country
+from .models import Alert, Region, Country, Feed
 
 
 
@@ -66,17 +66,26 @@ def injectCountries():
 
 # gets alerts from sources and processes them different for each source format
 # ignore non-polygon sources for now
-def getAlerts():
+def getAlerts(feeds):
     # list of sources and configurations
+    sources = feeds
+    '''
     sources = [
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-belgium", "BEL", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm",
+         {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-belgium", "BEL", "meteoalarm",
+         {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm",
+         {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp",
+         {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
     ]
-
+    '''
     for source in sources:
-        url, iso3, format, ns = source
+        url = source["url"]
+        iso3 = source["iso3"]
+        format = source["format"]
+        ns = {"atom":source["atom"], "cap": source["cap"]}
         match format:
             case "meteoalarm":
                 get_alert_meteoalarm(url, iso3, ns)
