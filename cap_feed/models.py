@@ -76,8 +76,8 @@ class Feed(models.Model):
     #Create a field that has interval of 1 second starting from 0:01 to 0:59 and a interval of 15 from 1:00 to 59:45
     INTERVAL_CHOICES = []
     for sec in range(30,135, 15):
-        filled_min = str(min).zfill(2)
-        filled_second = str(sec).zfill(2)
+        filled_min = str(sec//60).zfill(2)
+        filled_second = str(sec%60).zfill(2)
         INTERVAL_CHOICES.append((sec, f"{filled_min}:{filled_second}"))
 
         '''

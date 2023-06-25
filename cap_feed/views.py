@@ -6,7 +6,10 @@ from django.template import loader
 from .models import Alert, Region, Country, Feed, FeedEncoder
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 import cap_feed.alert_processing as ap
-
+from capaggregator.celery import app
+from django_celery_beat.models import PeriodicTask
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 
 def index(request):
@@ -44,3 +47,37 @@ def polling_alerts(request):
         task.save()
 
     return HttpResponse("Done")
+
+def polling_alerts_from_new_feeds(feed):
+    polling_rate = str(feed.polling_rate)
+    task_name = 'Polling Every ' + polling_rate + ' Seconds'
+    #Finding the task that has the same polling rate with the feed
+    #If there is one task, append the feed information for polling
+    try:
+        periodic_task = PeriodicTask.objects.get(name = task_name)
+        kwargs = json.loads(periodic_task.kwargs)
+        kwargs["feeds"].append(feed)
+        periodic_task.kwargs = json.dumps(kwargs,cls=FeedEncoder)
+
+    #If there is no such task, create one
+    except PeriodicTask.DoesNotExist:
+        schedule, created = IntervalSchedule.objects.get_or_create(
+            every=polling_rate,
+            period=IntervalSchedule.SECONDS,
+        )
+        task = PeriodicTask.objects.create(
+            interval=schedule,
+            name= task_name,
+            task='cap_feed.tasks.getAlerts',
+            start_time=datetime.datetime.now(),
+            kwargs=json.dumps({"feeds": [feed]}, cls=FeedEncoder),
+        )
+
+        print(task)
+
+
+def polling_alerts_from_updated_feeds():
+    pass
+
+def polling_alerts_from_deleted_feeds():
+    pass
