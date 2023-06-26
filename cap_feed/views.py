@@ -3,7 +3,7 @@ import json
 
 from django.http import HttpResponse
 from django.template import loader
-from .models import Alert, SourceEncoder
+from .models import Alert, Source, SourceEncoder
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 import cap_feed.alert_processing as ap
 from django_celery_beat.models import PeriodicTask
@@ -25,7 +25,7 @@ def polling_alerts(request):
     # To optimise the performance and decrease the number of tasks created with the same interval
     # I will record a dictionary where the key is polling rate of the sources and value is a list of sources
     polling_interval_map = dict()
-    for source in source.objects.all():
+    for source in Source.objects.all():
         if str(source.polling_interval) not in polling_interval_map.keys():
             polling_interval_map[str(source.polling_interval)] = [source]
         else:
