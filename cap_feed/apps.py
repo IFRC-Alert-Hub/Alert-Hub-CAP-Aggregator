@@ -9,12 +9,12 @@ from django.db.models.signals import post_delete
 class CapFeedConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'cap_feed'
-    #Listen to the new registration event of Feed
+    #Listen to the new registration event of Source
     def ready(self):
-        Feed = self.get_model("Feed")
-        post_delete.connect(existing_feed_deletion, sender=Feed)
+        Source = self.get_model("Source")
+        post_delete.connect(existing_source_deletion, sender=Source)
 
 
-def existing_feed_deletion(sender, instance, *args, **kwargs):
+def existing_source_deletion(sender, instance, *args, **kwargs):
     from . import views
-    views.deleting_feed_info_in_task(instance)
+    views.deleting_source_info_in_task(instance)

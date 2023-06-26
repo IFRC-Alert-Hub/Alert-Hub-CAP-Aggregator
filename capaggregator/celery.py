@@ -15,8 +15,10 @@ else:
 app = Celery('capaggregator')
 
 app.conf.beat_schedule = {
-
-
+    'remove-expired_cap_alerts-periodically':{
+        'task': 'cap_feed.tasks.remove_expired_alerts',
+        'schedule': timedelta(minutes=1)
+    }
 }
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
