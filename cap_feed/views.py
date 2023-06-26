@@ -131,8 +131,8 @@ def update_feeds_polling_rate(feed, original_polling_rate):
     polling_rate = str(feed.polling_rate)
     original_polling_rate = str(original_polling_rate)
     url = str(feed.url)
-    task_name = 'Polling Every ' + polling_rate + ' Seconds'
-    new_task_name = 'Polling Every ' + original_polling_rate + ' Seconds'
+    task_name = 'Polling Every ' + original_polling_rate + ' Seconds'
+    new_task_name = 'Polling Every ' + polling_rate + ' Seconds'
     try:
         delete_feed_info(task_name,url)
     except:

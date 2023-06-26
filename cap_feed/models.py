@@ -115,20 +115,18 @@ class Feed(models.Model):
         return dictionary
 
     __original_polling_rate = None
-    __created = True
 
     def __init__(self, *args, **kwargs):
         super(Feed, self).__init__(*args, **kwargs)
         self.__original_polling_rate = self.polling_rate
-        print(self.__created)
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         #If the feed is created, then add the feed info into corresponding task and changed __created to false.
-        if self.__created:
+        if self._state.adding:
             from . import views
             views.polling_alerts_from_new_feeds(self)
             self.__created = False
-            super(Feed, self).save(force_insert, force_update, *args, **kwargs)
+
 
         # When a feed is updated, the program will check if the polling rate is changed:
         # 1) If the polling rate is not changed, update the corresponding task
@@ -141,7 +139,7 @@ class Feed(models.Model):
             from . import views
             views.update_feeds_polling_rate(self, self.__original_polling_rate)
             print("Updated_2")
-
+        super(Feed, self).save(force_insert, force_update, *args, **kwargs)
 
 def serialise_feed_list(feed_list):
     serialised_list = []
