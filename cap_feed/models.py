@@ -1,8 +1,11 @@
-import datetime
-
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 import json
+
+
+from django.utils import timezone
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
+from django_celery_beat.models import PeriodicTask
 
 # Create your models here.
 
@@ -52,12 +55,10 @@ class Alert(models.Model):
         return self.id
 
 class Source(models.Model):
-    #Create a field that has interval of 1 second starting from 0:01 to 0:59 and a interval of 15 from 1:00 to 59:45
     INTERVAL_CHOICES = []
-    for sec in range(30, 135, 15):
-        filled_min = str(sec//60).zfill(2)
-        filled_second = str(sec%60).zfill(2)
-        INTERVAL_CHOICES.append((sec, f"{filled_min}:{filled_second}"))
+    # [30, 45, 60, 75, 90, 105, 120]
+    for interval in range(30, 135, 15):
+        INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     url = models.CharField(primary_key=True, max_length=255)
     polling_interval = models.IntegerField(null=False, choices=INTERVAL_CHOICES)
@@ -68,31 +69,21 @@ class Source(models.Model):
     cap = models.CharField(null=False, max_length=255)
     
     __previous_polling_interval = None
+    __previous_url = None
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)
         self.__previous_polling_interval = self.polling_interval
+        self.__previous_url = self.url
 
     def __str__(self):
         return self.url
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
-        #If the Source is created, then add the Source info into corresponding task.
         if self._state.adding:
-            from . import views
-            views.polling_alerts_from_new_sources(self)
-
-        # When a Source is updated, the program will check if the polling rate is changed:
-        # 1) If the polling rate is not changed, update the corresponding task
-        # 2) If changed, remove the task that includes the previous info of the Source and append to the new task
-        elif self.polling_interval == self.__previous_polling_interval:
-            from . import views
-            views.polling_alerts_from_updated_sources(self)
-            print("Updated_1")
-        elif self.polling_interval != self.__previous_polling_interval:
-            from . import views
-            views.update_sources_polling_interval(self, self.__previous_polling_interval)
-            print("Updated_2")
+            add_source(self)
+        else:
+            update_source(self, self.__previous_url, self.__previous_polling_interval)
         super(Source, self).save(force_insert, force_update, *args, **kwargs)
 
     #This function is to be used for serialisation
@@ -108,15 +99,80 @@ class Source(models.Model):
         dictionary['cap'] = self.cap
         return dictionary
 
-def serialise_Source_list(Source_list):
-    serialised_list = []
-    for Source in Source_list:
-        serialised_list.append(Source.to_dict())
-    return serialised_list
-
 class SourceEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Source):
             return obj.to_dict()
 
         return super().default(obj)
+    
+
+
+# Adds source to a periodic task
+def add_source(source):
+    interval = source.polling_interval
+    interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
+    if interval_schedule is None:
+        interval_schedule = IntervalSchedule.objects.create(every=interval, period='seconds')
+        interval_schedule.save()
+    alert_tasks = PeriodicTask.objects.filter(task='cap_feed.tasks.poll_new_alerts')
+    existing_task = None
+    for alert_task in alert_tasks:
+        if alert_task.interval.every == interval and alert_task.interval.period == 'seconds':
+            existing_task = alert_task
+            break
+    # If there is no task with the same interval, create a new one
+    if existing_task is None:
+        new_task = PeriodicTask.objects.create(
+            interval = interval_schedule,
+            name = 'poll_new_alerts',
+            task = 'cap_feed.tasks.poll_new_alerts',
+            start_time = timezone.now(),
+            kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
+        )
+        new_task.save()
+    # If there is a task with the same interval, add the source to the task
+    else:
+        kwargs = json.loads(existing_task.kwargs)
+        # for kwarg_source in kwargs["sources"]:
+        #     print('hello', kwarg_source['url'], source.url)
+        #     if kwarg_source['url'] == source.url:
+        #         source_to_add = kwarg_source
+        #         break
+        kwargs["sources"].append(source)
+        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
+        existing_task.save()
+
+# Removes source from a periodic task
+def remove_source(source):
+    interval = source.polling_interval
+    interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
+    existing_task = PeriodicTask.objects.filter(interval=interval_schedule, task="cap_feed.tasks.poll_new_alerts").first()
+    # If there is no task with the same interval, thats a problem
+    if existing_task is None:
+        print("There is no periodic task with the same interval")
+    # If there is a task with the same interval, remove the source from the task
+    else:
+        kwargs = json.loads(existing_task.kwargs)
+        for kwarg_source in kwargs["sources"]:
+            if kwarg_source['url'] == source.url:
+                source_to_remove = kwarg_source
+                break
+        kwargs["sources"].remove(source_to_remove)
+        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
+        existing_task.save()
+        if kwargs == {"sources": []}:
+            existing_task.delete()
+
+def update_source(source, previous_url, previous_interval):
+    # Remove the source with old configurations
+    new_url = source.url
+    new_interval = source.polling_interval
+    source.url = previous_url
+    source.polling_interval = previous_interval
+    # Remove entry from database
+    source.delete()
+    # Add the updated source again
+    source.url = new_url
+    source.polling_interval = new_interval
+    add_source(source)

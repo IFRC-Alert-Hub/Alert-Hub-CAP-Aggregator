@@ -15,7 +15,7 @@ else:
 app = Celery('capaggregator')
 
 app.conf.beat_schedule = {
-    'remove-expired_cap_alerts-periodically':{
+    'remove_expired_alerts':{
         'task': 'cap_feed.tasks.remove_expired_alerts',
         'schedule': timedelta(minutes=1)
     }

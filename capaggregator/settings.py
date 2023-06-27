@@ -34,6 +34,8 @@ if 'CODESPACE_NAME' in os.environ:
 # Application definition
 
 INSTALLED_APPS = [
+    'django_celery_results',
+    'django_celery_beat',
     'cap_feed.apps.CapFeedConfig',
     'graphene_django',
     'django.contrib.admin',
@@ -42,8 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_results',
-    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
