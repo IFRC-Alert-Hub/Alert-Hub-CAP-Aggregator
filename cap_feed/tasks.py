@@ -12,3 +12,7 @@ def poll_new_alerts(self, sources):
 def remove_expired_alerts(self):
     ap.remove_expired_alerts()
     return "remove_expired_alerts DONE"
+@shared_task(bind=True)
+def remove_expired_alerts(self):
+    ap.remove_expired_alerts()
+    return "remove_expired_alerts DONE"

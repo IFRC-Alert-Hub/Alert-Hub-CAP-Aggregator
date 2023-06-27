@@ -20,6 +20,21 @@ def index(request):
     }
     return HttpResponse(template.render(context, request))
 
+def polling_alerts(request):
+    schedule, created = IntervalSchedule.objects.get_or_create(
+        every=60,
+        period=IntervalSchedule.SECONDS,
+    )
+    PeriodicTask.objects.create(
+        interval=schedule,  # we created this above.
+        name='Polls CAP alerts periodically',  # simply describes this periodic task.
+        task='cap_feed.tasks.get_alerts',  # name of task.
+        args=json.dumps(['arg1', 'arg2']),
+        kwargs=json.dumps({
+            'be_careful': True,
+       }),
+    )
+    return HttpResponse("DONE")
 
 def polling_alerts(request):
     # To optimise the performance and decrease the number of tasks created with the same interval

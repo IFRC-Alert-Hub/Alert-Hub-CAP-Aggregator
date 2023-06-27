@@ -30,6 +30,28 @@ class Country(models.Model):
     def __str__(self):
         return self.name
     
+
+class Region(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=255)
+    polygon = models.TextField(max_length=16383, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+class Country(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=255)
+    iso = models.CharField(max_length=255, blank=True, default='')
+    iso3 = models.CharField(max_length=255, blank=True, default='')
+    polygon = models.TextField(max_length=16383, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, default='')
+    region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
+
+    def __str__(self):
+        return self.name
+    
 class Alert(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     identifier = models.CharField(max_length=255)
@@ -41,6 +63,7 @@ class Alert(models.Model):
     urgency = models.CharField(max_length=255)
     severity = models.CharField(max_length=255)
     certainty = models.CharField(max_length=255)
+    effective = models.DateTimeField()
     effective = models.DateTimeField()
     expires = models.DateTimeField()
 
