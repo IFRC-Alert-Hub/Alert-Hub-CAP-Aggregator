@@ -3,11 +3,32 @@ import requests
 
 import xml.etree.ElementTree as ET
 import pytz
-from .models import Alert, Region, Country
+from .models import Alert, Region, Country, Source
 from datetime import datetime
 from django.utils import timezone
 
+# inject source configurations if not already present
+def inject_sources():
+    source_data = [
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-belgium", "BEL", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+    ]
 
+    if Source.objects.count() == 0:
+        for source_entry in source_data:
+            source = Source()
+            source.url = source_entry[0]
+            source.polling_interval = 60
+            source.verification_keys = 'unknown'
+            source.iso3 = source_entry[1]
+            source.format = source_entry[2]
+            source.atom = source_entry[3]['atom']
+            source.cap = source_entry[3]['cap']
+            source.save()
 
 # inject region and country data if not already present
 def inject_unknown_regions():
@@ -71,19 +92,13 @@ def convert_datetime(original_datetime):
     return datetime.fromisoformat(original_datetime).astimezone(pytz.timezone('UTC'))
 
 # gets alerts from sources and processes them different for each source format
-def get_alerts():
+def get_alerts(sources):
     # list of sources and configurations
-    sources = [
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-belgium", "BEL", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-    ]
-
     for source in sources:
-        url, iso3, format, ns = source
+        url = source["url"]
+        iso3 = source["iso3"]
+        format = source["format"]
+        ns = {"atom":source["atom"], "cap": source["cap"]}
         match format:
             case "meteoalarm":
                 get_alert_meteoalarm(url, iso3, ns)

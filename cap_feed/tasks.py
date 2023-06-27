@@ -4,8 +4,8 @@ from celery import shared_task
 import cap_feed.alert_processing as ap
 
 @shared_task(bind=True)
-def get_alerts(self):
-    ap.get_alerts()
+def get_alerts(self, sources):
+    ap.get_alerts(sources)
     return "get_alerts DONE"
 
 @shared_task(bind=True)
