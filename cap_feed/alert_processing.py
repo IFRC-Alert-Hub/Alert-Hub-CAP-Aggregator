@@ -92,7 +92,7 @@ def convert_datetime(original_datetime):
     return datetime.fromisoformat(original_datetime).astimezone(pytz.timezone('UTC'))
 
 # gets alerts from sources and processes them different for each source format
-def get_alerts(sources):
+def poll_new_alerts(sources):
     # list of sources and configurations
     for source in sources:
         url = source["url"]
