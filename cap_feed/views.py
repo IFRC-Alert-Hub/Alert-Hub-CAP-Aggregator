@@ -9,7 +9,7 @@ import cap_feed.alert_processing as ap
 
 
 def index(request):
-    ap.inject_unknown_regions()
+    ap.inject_geographical_data()
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {

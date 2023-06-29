@@ -3,14 +3,21 @@ import requests
 
 import xml.etree.ElementTree as ET
 import pytz
-from .models import Alert, Region, Country
+from .models import Alert, Continent, Region, Country
 from datetime import datetime
 from django.utils import timezone
 
 
 
 # inject region and country data if not already present
-def inject_unknown_regions():
+def inject_geographical_data():
+    if Continent.objects.count() == 0:
+        inject_continents()
+        # inject unknown continent for alerts without a defined continent
+        unknown_continent = Continent()
+        unknown_continent.id = -1
+        unknown_continent.name = "Unknown"
+        unknown_continent.save()
     if Region.objects.count() == 0:
         inject_regions()
         # inject unknown region for alerts without a defined region
@@ -26,9 +33,19 @@ def inject_unknown_regions():
         unknown_country.name = "Unknown"
         unknown_country.save()
 
+# inject continent data
+def inject_continents():
+    with open('static/geographic/continents.json') as file:
+        continent_data = json.load(file)
+        for continent_entry in continent_data:
+            continent = Continent()
+            continent.id = continent_entry["id"]
+            continent.name = continent_entry["name"]
+            continent.save()
+
 # inject region data
 def inject_regions():
-    with open('cap_feed/region.json') as file:
+    with open('static/geographic/ifrc-regions.json') as file:
         region_data = json.load(file)
         for region_entry in region_data:
             region = Region()
@@ -42,29 +59,30 @@ def inject_regions():
 
 # inject country data
 def inject_countries():
-    with open('cap_feed/country.json') as file:
+    ifrc_countries = {}
+    with open('static/geographic/ifrc-countries-and-territories.json') as file:
         country_data = json.load(file)
-        for country_entry in country_data:
-            country = Country()
-            country.id = country_entry["id"]
-            country.name = country_entry["name"]
-            region_id = country_entry["region"]
-            if ("Region" in country.name) or ("Cluster" in country.name):
+        for index, feature in enumerate(country_data):
+            name = feature["name"]
+            region_id = feature["region"]
+            iso3 = feature["iso3"]
+            if ("Region" in name) or ("Cluster" in name) or (region_id is None) or (iso3 is None):
                 continue
-            if region_id is not None:
-                country.region = Region.objects.get(id=country_entry["region"])
-                if country_entry["iso"] is not None:
-                    country.iso = country_entry["iso"]
-                if country_entry["iso3"] is not None:
-                    country.iso3 = country_entry["iso3"]
-                if country_entry["bbox"] is not None:
-                    coordinates = country_entry["bbox"]["coordinates"][0]
-                    for coordinate in coordinates:
-                        country.polygon += str(coordinate[0]) + "," + str(coordinate[1]) + " "
-                if country_entry["centroid"] is not None:
-                    coordinates = country_entry["centroid"]["coordinates"]
-                    country.centroid = str(coordinates[0]) + "," + str(coordinates[1])
+            ifrc_countries[iso3] = region_id
+    processed_iso3 = set()
+    with open('static/geographic/opendatasoft-countries-and-territories.geojson') as file:
+        country_data = json.load(file)
+        for index, feature in enumerate(country_data['features']):
+            country = Country()
+            country.id = index
+            country.name = feature['properties']['name']
+            country.iso3 = feature['properties']['iso3']
+            if (country.iso3 in ifrc_countries):
+                country.region = Region.objects.filter(id = ifrc_countries[country.iso3]).first()
+                country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
+                country.polygon = feature['geometry']['coordinates'][0][0]
                 country.save()
+            processed_iso3.add(country.iso3)
 
 # converts CAP1.2 iso format datetime string to datetime object in UTC timezone
 def convert_datetime(original_datetime):
