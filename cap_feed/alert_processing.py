@@ -1,3 +1,5 @@
+import os
+module_dir = os.path.dirname(__file__)  # get current directory
 import json
 import requests
 
@@ -56,7 +58,8 @@ def inject_geographical_data():
 
 # inject continent data
 def inject_continents():
-    with open('cap_feed/continents.json') as file:
+    file_path = os.path.join(module_dir, 'geographical/continents.json')
+    with open(file_path) as file:
         continent_data = json.load(file)
         for continent_entry in continent_data:
             continent = Continent()
@@ -66,7 +69,8 @@ def inject_continents():
 
 # inject region data
 def inject_regions():
-    with open('cap_feed/ifrc_regions.json') as file:
+    file_path = os.path.join(module_dir, 'geographical/ifrc-regions.json')
+    with open(file_path) as file:
         region_data = json.load(file)
         for region_entry in region_data:
             region = Region()
@@ -81,7 +85,8 @@ def inject_regions():
 # inject country data
 def inject_countries():
     ifrc_countries = {}
-    with open('cap_feed/ifrc_countries_and_territories.json') as file:
+    file_path = os.path.join(module_dir, 'geographical/ifrc-countries-and-territories.json')
+    with open(file_path) as file:
         country_data = json.load(file)
         for index, feature in enumerate(country_data):
             name = feature["name"]
@@ -91,7 +96,8 @@ def inject_countries():
                 continue
             ifrc_countries[iso3] = region_id
     processed_iso3 = set()
-    with open('cap_feed/opendatasoft_countries_and_territories.geojson') as file:
+    file_path = os.path.join(module_dir, 'geographical/opendatasoft-countries-and-territories.geojson')
+    with open(file_path) as file:
         country_data = json.load(file)
         for index, feature in enumerate(country_data['features']):
             country = Country()
