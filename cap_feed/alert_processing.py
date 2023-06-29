@@ -66,7 +66,7 @@ def inject_continents():
 
 # inject region data
 def inject_regions():
-    with open('cap_feed/ifrc-regions.json') as file:
+    with open('cap_feed/ifrc_regions.json') as file:
         region_data = json.load(file)
         for region_entry in region_data:
             region = Region()
@@ -81,7 +81,7 @@ def inject_regions():
 # inject country data
 def inject_countries():
     ifrc_countries = {}
-    with open('cap_feed/ifrc-countries-and-territories.json') as file:
+    with open('cap_feed/ifrc_countries_and_territories.json') as file:
         country_data = json.load(file)
         for index, feature in enumerate(country_data):
             name = feature["name"]
@@ -91,7 +91,7 @@ def inject_countries():
                 continue
             ifrc_countries[iso3] = region_id
     processed_iso3 = set()
-    with open('cap_feed/opendatasoft-countries-and-territories.geojson') as file:
+    with open('cap_feed/opendatasoft_countries_and_territories.geojson') as file:
         country_data = json.load(file)
         for index, feature in enumerate(country_data['features']):
             country = Country()
