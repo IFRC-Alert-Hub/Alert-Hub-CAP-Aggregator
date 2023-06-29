@@ -11,8 +11,8 @@ from .models import Alert, Source, SourceEncoder
 
 
 def index(request):
-    #ap.inject_geographical_data()
-    #ap.inject_sources()
+    ap.inject_geographical_data()
+    ap.inject_sources()
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
