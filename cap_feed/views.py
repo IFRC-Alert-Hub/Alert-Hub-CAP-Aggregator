@@ -15,8 +15,8 @@ def index(request):
     #ap.inject_sources()
     try:
         ap.inject_continents()
-    except:
-        return HttpResponse("crashed lol")
+    except Exception as e:
+        return HttpResponse("crashed lol", e)
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
