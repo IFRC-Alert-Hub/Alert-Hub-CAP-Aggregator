@@ -9,6 +9,13 @@ from django_celery_beat.models import PeriodicTask
 
 # Create your models here.
 
+class Continent(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
 class Region(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
@@ -21,11 +28,10 @@ class Region(models.Model):
 class Country(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
-    iso = models.CharField(max_length=255, blank=True, default='')
     iso3 = models.CharField(max_length=255, blank=True, default='')
     polygon = models.TextField(max_length=16383, blank=True, default='')
-    centroid = models.CharField(max_length=255, blank=True, default='')
     region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
+    continent = models.ForeignKey(Continent, on_delete=models.SET_DEFAULT, default='-1')
 
     def __str__(self):
         return self.name
