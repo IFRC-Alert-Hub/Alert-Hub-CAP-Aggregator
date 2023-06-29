@@ -62,7 +62,7 @@ def inject_continents():
             continent = Continent()
             continent.id = continent_entry["id"]
             continent.name = continent_entry["name"]
-            #continent.save()
+            continent.save()
 
 # inject region data
 def inject_regions():
