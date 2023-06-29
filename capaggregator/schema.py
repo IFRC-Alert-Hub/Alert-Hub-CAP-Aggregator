@@ -11,7 +11,7 @@ class AlertType(DjangoObjectType):
 class ContinentType(DjangoObjectType):
     class Meta:
         model = Continent
-        field = ("id", "name", "polygon", "centroid")
+        field = ("id", "name")
 
 class RegionType(DjangoObjectType):
     class Meta:
