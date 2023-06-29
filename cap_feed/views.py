@@ -13,7 +13,7 @@ from .models import Alert, Source, SourceEncoder
 def index(request):
     #ap.inject_geographical_data()
     #ap.inject_sources()
-    ap.inject_continents()
+    #ap.inject_continents()
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
@@ -29,7 +29,7 @@ def polling_alerts(request):
     PeriodicTask.objects.create(
         interval=schedule,  # we created this above.
         name='Polls CAP alerts periodically',  # simply describes this periodic task.
-        task='cap_feed.tasks.get_alerts',  # name of task.
+        task='cap_feed.tasks.poll_new_alerts',  # name of task.
         args=json.dumps(['arg1', 'arg2']),
         kwargs=json.dumps({
             'be_careful': True,
