@@ -6,7 +6,7 @@ from cap_feed.models import Alert, Continent, Region, Country
 class AlertType(DjangoObjectType):
     class Meta:
         model = Alert
-        field = ("id", "identifier", "sender", "sent", "status", "msg_type", "scope", "urgency", "severity", "certainty", "effective", "expires", "area_desc", "event", "geocode_name", "geocode_value", "polygon")
+        field = ("id", "identifier", "sender", "sent", "status", "msg_type", "scope", "urgency", "severity", "certainty", "effective", "expires", "area_desc", "event", "geocode_name", "geocode_value")
 
 class ContinentType(DjangoObjectType):
     class Meta:
@@ -21,7 +21,7 @@ class RegionType(DjangoObjectType):
 class CountryType(DjangoObjectType):
     class Meta:
         model = Country
-        field = ("id", "name", "iso", "iso3", "polygon", "centroid")
+        field = ("id", "name", "iso3", "polygon", "multipolygon")
 
 
 class Query(graphene.ObjectType):

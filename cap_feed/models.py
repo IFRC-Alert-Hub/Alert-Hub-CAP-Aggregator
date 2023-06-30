@@ -19,7 +19,7 @@ class Continent(models.Model):
 class Region(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+    polygon = models.TextField(blank=True, default='')
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
@@ -28,11 +28,11 @@ class Region(models.Model):
 class Country(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
-    iso3 = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+    iso3 = models.CharField(max_length=3)
+    polygon = models.TextField(blank=True, default='')
+    multipolygon = models.TextField(blank=True, default='')
     region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
     continent = models.ForeignKey(Continent, on_delete=models.SET_DEFAULT, default='-1')
-
     def __str__(self):
         return self.name
     
@@ -48,14 +48,12 @@ class Alert(models.Model):
     severity = models.CharField(max_length=255)
     certainty = models.CharField(max_length=255)
     effective = models.DateTimeField()
-    effective = models.DateTimeField()
     expires = models.DateTimeField()
 
     area_desc = models.CharField(max_length=255)
     event = models.CharField(max_length=255)
     geocode_name = models.CharField(max_length=255, blank=True, default='')
     geocode_value = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
     country = models.ForeignKey(Country, on_delete=models.SET_DEFAULT, default='-1')
 
     def __str__(self):
@@ -69,10 +67,9 @@ class Source(models.Model):
 
     url = models.CharField(primary_key=True, max_length=255)
     polling_interval = models.IntegerField(null=False, choices=INTERVAL_CHOICES)
-    verification_keys = models.CharField(blank=True, null=True, max_length=255)
-    iso3 = models.CharField(null=False, max_length=255)
+    iso3 = models.CharField(null=False, max_length=3)
     format = models.CharField(null=False, max_length=255)
-    atom = models.CharField(null=False,max_length=255)
+    atom = models.CharField(null=False, max_length=255)
     cap = models.CharField(null=False, max_length=255)
     
     __previous_polling_interval = None

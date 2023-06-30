@@ -107,7 +107,11 @@ def inject_countries():
             if (country.iso3 in ifrc_countries):
                 country.region = Region.objects.filter(id = ifrc_countries[country.iso3]).first()
                 country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
-                country.polygon = feature['geometry']['coordinates'][0][0]
+                coordinates = feature['geometry']['coordinates']
+                if len(coordinates) == 1:
+                    country.polygon = coordinates
+                else:
+                    country.multipolygon = coordinates
                 country.save()
             processed_iso3.add(country.iso3)
 
@@ -192,7 +196,7 @@ def get_alert_capfeedphp(url, iso3, ns):
 
             entry_content_alert_info_area = entry_content_alert_info.find('cap:area', ns)
             alert.area_desc = entry_content_alert_info_area.find('cap:areaDesc', ns).text
-            alert.polygon = entry_content_alert_info_area.find('cap:polygon', ns).text
+            #alert.polygon = entry_content_alert_info_area.find('cap:polygon', ns).text
             alert.country = Country.objects.get(iso3=iso3)
             alert.save()
         except:
