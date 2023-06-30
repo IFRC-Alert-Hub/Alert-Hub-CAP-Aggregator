@@ -34,6 +34,7 @@ if 'CODESPACE_NAME' in os.environ:
 # Application definition
 
 INSTALLED_APPS = [
+    'alert_subscription.apps.AlertSubscriptionConfig',
     'daphne',
     'channels',
     'django_celery_results',
