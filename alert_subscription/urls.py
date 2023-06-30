@@ -21,5 +21,5 @@ from capaggregator.schema import schema
 from . import views
 
 urlpatterns = [
-    path('send_packet', views.send_packet),
+    #path('send_packet', views),
 ]
