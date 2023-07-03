@@ -25,7 +25,6 @@ def inject_sources():
             source = Source()
             source.url = source_entry[0]
             source.polling_interval = 60
-            source.verification_keys = 'unknown'
             source.iso3 = source_entry[1]
             source.format = source_entry[2]
             source.atom = source_entry[3]['atom']
@@ -39,21 +38,21 @@ def inject_geographical_data():
         # inject unknown continent for alerts without a defined continent
         unknown_continent = Continent()
         unknown_continent.id = -1
-        unknown_continent.name = "Unknown"
+        unknown_continent.name = 'Unknown'
         unknown_continent.save()
     if Region.objects.count() == 0:
         inject_regions()
         # inject unknown region for alerts without a defined region
         unknown_region = Region()
         unknown_region.id = -1
-        unknown_region.name = "Unknown"
+        unknown_region.name = 'Unknown'
         unknown_region.save()
     if Country.objects.count() == 0:
         inject_countries()
         # inject unknown country for alerts without a defined country
         unknown_country = Country()
         unknown_country.id = -1
-        unknown_country.name = "Unknown"
+        unknown_country.name = 'Unknown'
         unknown_country.save()
 
 # inject continent data
@@ -112,6 +111,9 @@ def inject_countries():
                     country.polygon = coordinates
                 else:
                     country.multipolygon = coordinates
+                country.status = feature['properties']['status']
+                if country.status == 'Occupied Territory (under review)' or country.status == 'PT Territory':
+                    continue
                 country.save()
             processed_iso3.add(country.iso3)
 

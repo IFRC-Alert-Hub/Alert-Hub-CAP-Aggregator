@@ -3,13 +3,25 @@ from .models import Alert, Continent, Region, Country, Source
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule
 from django_celery_results.models import GroupResult
 
-# Register your models here.
+
+
+class CountryAdmin(admin.ModelAdmin):
+    list_display = ["name", "iso3", "region", "continent"]
+    list_filter = ["region", "continent"]
+    search_fields = ["name", "iso3"]
+
+class SourceAdmin(admin.ModelAdmin):
+    list_display = ["url", "iso3", "format", "polling_interval"]
+    list_filter = ["format", "polling_interval"]
+    search_fields = ["url", "iso3"]
+
+
 
 admin.site.register(Alert)
 admin.site.register(Continent)
 admin.site.register(Region)
-admin.site.register(Country)
-admin.site.register(Source)
+admin.site.register(Country, CountryAdmin)
+admin.site.register(Source, SourceAdmin)
 
 admin.site.unregister(GroupResult)
 admin.site.unregister(CrontabSchedule)
