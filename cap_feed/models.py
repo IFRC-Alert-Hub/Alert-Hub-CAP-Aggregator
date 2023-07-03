@@ -111,7 +111,8 @@ class Alert(models.Model):
             dictionary['geocode_value'] = self.geocode_value
         if self.polygon is not None:
             dictionary['polygon'] = self.polygon
-        dictionary['country'] = self.country.name
+        dictionary['country_id'] = self.country.id
+        dictionary['country_name'] = self.country.name
 
         return dictionary
 

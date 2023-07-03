@@ -1,7 +1,6 @@
 import json
 
 from channels.generic.websocket import WebsocketConsumer
-from .models import Channel
 from asgiref.sync import async_to_sync
 
 class AlertConsumer(WebsocketConsumer):
@@ -26,7 +25,7 @@ class AlertConsumer(WebsocketConsumer):
         alert = event['text']
         print(f'Received alert: {alert}')
 
-        self.send(text_data=json.dumps({"message": alert}))
+        self.send(text_data=json.dumps({"message": json.loads(alert)}))
 
 
 
