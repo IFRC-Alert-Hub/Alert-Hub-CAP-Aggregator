@@ -5,6 +5,10 @@ from django_celery_results.models import GroupResult
 
 
 
+class AlertAdmin(admin.ModelAdmin):
+    list_display = ["id", "source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
+    list_filter = ["source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
+
 class CountryAdmin(admin.ModelAdmin):
     list_display = ["name", "iso3", "region", "continent"]
     list_filter = ["region", "continent"]
@@ -17,7 +21,7 @@ class SourceAdmin(admin.ModelAdmin):
 
 
 
-admin.site.register(Alert)
+admin.site.register(Alert, AlertAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)

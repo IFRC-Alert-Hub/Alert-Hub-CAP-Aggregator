@@ -17,6 +17,16 @@ def inject_sources():
         ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
         ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
         ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-bosnia-herzegovina", "BIH", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-bulgaria", "BGR", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-croatia", "HRV", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-cyprus", "CYP", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-czechia", "CZE", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-denmark", "DNK", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-estonia", "EST", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-finland", "FIN", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-greece", "GRC", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-hungary", "HUN", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
         ("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
     ]
 
@@ -103,6 +113,9 @@ def inject_countries():
             country.id = index
             country.name = feature['properties']['name']
             country.iso3 = feature['properties']['iso3']
+            status = feature['properties']['status']
+            if status == 'Occupied Territory (under review)' or status == 'PT Territory':
+                    continue
             if (country.iso3 in ifrc_countries):
                 country.region = Region.objects.filter(id = ifrc_countries[country.iso3]).first()
                 country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
@@ -111,9 +124,13 @@ def inject_countries():
                     country.polygon = coordinates
                 else:
                     country.multipolygon = coordinates
-                country.status = feature['properties']['status']
-                if country.status == 'Occupied Territory (under review)' or country.status == 'PT Territory':
-                    continue
+                
+                latitude = feature['properties']['geo_point_2d']['lat']
+                longitude = feature['properties']['geo_point_2d']['lon']
+                country.centroid = f'[{longitude}, {latitude}]'
+
+                #"properties":{"geo_point_2d":{"lon":31.49752845618843,"lat":-26.562642190929807},
+
                 country.save()
             processed_iso3.add(country.iso3)
 
@@ -142,8 +159,12 @@ def get_alert_meteoalarm(url, iso3, ns):
     for entry in root.findall('atom:entry', ns):
         try:
             alert = Alert()
+            alert.source = Source.objects.get(url=url)
+
             alert.id = entry.find('atom:id', ns).text
             alert.identifier = entry.find('cap:identifier', ns).text
+            
+            #sender needs to be fixed
             alert.sender = url
             alert.sent = convert_datetime(entry.find('cap:sent', ns).text)
             alert.status = entry.find('cap:status', ns).text
@@ -159,14 +180,14 @@ def get_alert_meteoalarm(url, iso3, ns):
 
             alert.area_desc = entry.find('cap:areaDesc', ns).text
             alert.event = entry.find('cap:event', ns).text
-
             geocode = entry.find('cap:geocode', ns)
-            alert.geocode_name = geocode.find('atom:valueName', ns).text
-            alert.geocode_value = geocode.find('atom:value', ns).text
+            if geocode is not None:
+                alert.geocode_name = geocode.find('atom:valueName', ns).text
+                alert.geocode_value = geocode.find('atom:value', ns).text
             alert.country = Country.objects.get(iso3=iso3)
             alert.save()
-        except:
-            pass
+        except Exception as e:
+            print("get_alert_meteoalarm", e)
 
 # processing for capfeedphp format, example: https://alert.metservice.gov.jm/capfeed.php
 def get_alert_capfeedphp(url, iso3, ns):
@@ -175,8 +196,9 @@ def get_alert_capfeedphp(url, iso3, ns):
     for entry in root.findall('atom:entry', ns):
         try:
             alert = Alert()
-            alert.id = entry.find('atom:id', ns).text
+            alert.source = Source.objects.get(url=url)
 
+            alert.id = entry.find('atom:id', ns).text
             entry_content = entry.find('atom:content', ns)
             entry_content_alert = entry_content.find('cap:alert', ns)
             alert.identifier = entry_content_alert.find('cap:identifier', ns).text
@@ -187,6 +209,7 @@ def get_alert_capfeedphp(url, iso3, ns):
             alert.scope = entry_content_alert.find('cap:scope', ns).text
 
             entry_content_alert_info = entry_content_alert.find('cap:info', ns)
+            alert.event = entry_content_alert_info.find('cap:event', ns).text
             alert.urgency = entry_content_alert_info.find('cap:urgency', ns).text
             alert.severity = entry_content_alert_info.find('cap:severity', ns).text
             alert.certainty = entry_content_alert_info.find('cap:certainty', ns).text
@@ -194,15 +217,16 @@ def get_alert_capfeedphp(url, iso3, ns):
             alert.expires = convert_datetime(entry_content_alert_info.find('cap:expires', ns).text)
             if alert.expires < timezone.now():
                 continue
-            alert.event = entry_content_alert_info.find('cap:event', ns).text
+            alert.senderName = entry_content_alert_info.find('cap:senderName', ns).text
+            alert.description = entry_content_alert_info.find('cap:description', ns).text
 
             entry_content_alert_info_area = entry_content_alert_info.find('cap:area', ns)
             alert.area_desc = entry_content_alert_info_area.find('cap:areaDesc', ns).text
             #alert.polygon = entry_content_alert_info_area.find('cap:polygon', ns).text
             alert.country = Country.objects.get(iso3=iso3)
             alert.save()
-        except:
-            pass
+        except Exception as e:
+            print("get_alert_capfeedphp", e)
 
 def remove_expired_alerts():
     Alert.objects.filter(expires__lt=timezone.now()).delete()

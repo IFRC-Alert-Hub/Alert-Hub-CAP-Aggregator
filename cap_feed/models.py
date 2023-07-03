@@ -31,8 +31,9 @@ class Country(models.Model):
     iso3 = models.CharField(max_length=3, unique=True)
     polygon = models.TextField(blank=True, default='')
     multipolygon = models.TextField(blank=True, default='')
-    region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
-    continent = models.ForeignKey(Continent, on_delete=models.SET_DEFAULT, default='-1')
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, default='-1')
+    continent = models.ForeignKey(Continent, on_delete=models.CASCADE, default='-1')
+    centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.name
@@ -44,29 +45,6 @@ class Country(models.Model):
         except:
             print('ERROR GETTING ISO3S')
             return []
-    
-class Alert(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
-    identifier = models.CharField(max_length=255)
-    sender = models.CharField(max_length=255)
-    sent = models.DateTimeField()
-    status = models.CharField(max_length=255)
-    msg_type = models.CharField(max_length=255)
-    scope = models.CharField(max_length=255)
-    urgency = models.CharField(max_length=255)
-    severity = models.CharField(max_length=255)
-    certainty = models.CharField(max_length=255)
-    effective = models.DateTimeField()
-    expires = models.DateTimeField()
-
-    area_desc = models.CharField(max_length=255)
-    event = models.CharField(max_length=255)
-    geocode_name = models.CharField(max_length=255, blank=True, default='')
-    geocode_value = models.CharField(max_length=255, blank=True, default='')
-    country = models.ForeignKey(Country, on_delete=models.SET_DEFAULT, default='-1')
-
-    def __str__(self):
-        return self.id
 
 class Source(models.Model):
     INTERVAL_CHOICES = []
@@ -95,7 +73,8 @@ class Source(models.Model):
         self.__previous_url = self.url
 
     def __str__(self):
-        return self.url
+        name = self.format + ' ' + self.iso3 + ' ' + Country.objects.get(iso3=self.iso3).name
+        return name
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
@@ -122,7 +101,32 @@ class SourceEncoder(json.JSONEncoder):
 
         return super().default(obj)
     
+class Alert(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    identifier = models.CharField(max_length=255)
+    sender = models.CharField(max_length=255)
+    senderName = models.CharField(max_length=255, default='')
+    source = models.ForeignKey(Source, on_delete=models.CASCADE)
+    sent = models.DateTimeField()
+    status = models.CharField(max_length=255)
+    msg_type = models.CharField(max_length=255)
+    scope = models.CharField(max_length=255)
+    urgency = models.CharField(max_length=255)
+    severity = models.CharField(max_length=255)
+    certainty = models.CharField(max_length=255)
+    effective = models.DateTimeField()
+    expires = models.DateTimeField()
 
+    description = models.TextField(blank=True, default='')
+
+    area_desc = models.CharField(max_length=255)
+    event = models.CharField(max_length=255)
+    geocode_name = models.CharField(max_length=255, blank=True, default='')
+    geocode_value = models.CharField(max_length=255, blank=True, default='')
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, default='-1')
+
+    def __str__(self):
+        return self.id
 
 # Adds source to a periodic task
 def add_source(source):

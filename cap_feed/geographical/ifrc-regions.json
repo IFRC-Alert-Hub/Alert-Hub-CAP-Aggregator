@@ -3,7 +3,7 @@
     "name": 0,
     "id": 0,
     "region_name": "Africa",
-    "centroid": "17.458740234362434 -2.677413176352464",
+    "centroid": "[17.458740234362434, -2.677413176352464]",
     "bbox": {
       "type": "Polygon",
       "coordinates": [
@@ -22,7 +22,7 @@
     "name": 1,
     "id": 1,
     "region_name": "Americas",
-    "centroid": "-80.83261851536723 -2.6920536197633442",
+    "centroid": "[-80.83261851536723, -2.6920536197633442]",
     "bbox": {
       "type": "Polygon",
       "coordinates": [
@@ -41,7 +41,7 @@
     "name": 2,
     "id": 2,
     "region_name": "Asia Pacific",
-    "centroid": "117.78896429869648 -3.1783208418475954",
+    "centroid": "[117.78896429869648, -3.1783208418475954]",
     "bbox": {
       "type": "Polygon",
       "coordinates": [
@@ -60,7 +60,7 @@
     "name": 3,
     "id": 3,
     "region_name": "Europe",
-    "centroid": "30.64725652750233 45.572165430308736",
+    "centroid": "[30.64725652750233, 45.572165430308736]",
     "bbox": {
       "type": "Polygon",
       "coordinates": [
@@ -79,7 +79,7 @@
     "name": 4,
     "id": 4,
     "region_name": "Middle East & North Africa",
-    "centroid": "21.18749859869599 31.264366696701767",
+    "centroid": "[21.18749859869599, 31.264366696701767]",
     "bbox": {
       "type": "Polygon",
       "coordinates": [
