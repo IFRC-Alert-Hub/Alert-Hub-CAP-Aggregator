@@ -6,7 +6,7 @@ import cap_feed.alert_processing as ap
 @shared_task(bind=True)
 def poll_new_alerts(self, sources):
     ap.poll_new_alerts(sources)
-    return "get_alerts DONE"
+    return "poll_new_alerts DONE"
 
 @shared_task(bind=True)
 def remove_expired_alerts(self):

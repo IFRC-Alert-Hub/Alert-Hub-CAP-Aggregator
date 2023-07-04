@@ -14,6 +14,8 @@ cron-descriptor==1.4.0
 Django==4.2.2
 django-celery-beat==2.5.0
 django-celery-results==2.5.1
+django-cors-headers==4.1.0
+django-extensions==3.2.3
 django-timezone-field==5.1
 graphene==3.2.2
 graphene-django==3.1.2

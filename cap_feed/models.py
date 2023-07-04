@@ -9,86 +9,59 @@ from django_celery_beat.models import PeriodicTask
 
 # Create your models here.
 
-class Region(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
+class Continent(models.Model):
+    id = models.CharField(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+class Region(models.Model):
+    id = models.CharField(primary_key=True, editable=False)
+    name = models.CharField(max_length=255)
+    polygon = models.TextField(blank=True, default='')
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.name
 
 class Country(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
+    id = models.CharField(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
-    iso = models.CharField(max_length=255, blank=True, default='')
-    iso3 = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
-    centroid = models.CharField(max_length=255, blank=True, default='')
-    region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
-
-    def __str__(self):
-        return self.name
-    
-
-class Region(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
-    name = models.CharField(max_length=255)
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+    iso3 = models.CharField(max_length=3, unique=True)
+    polygon = models.TextField(blank=True, default='')
+    multipolygon = models.TextField(blank=True, default='')
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, default='-1')
+    continent = models.ForeignKey(Continent, on_delete=models.CASCADE, default='-1')
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.name
 
-class Country(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
-    name = models.CharField(max_length=255)
-    iso = models.CharField(max_length=255, blank=True, default='')
-    iso3 = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
-    centroid = models.CharField(max_length=255, blank=True, default='')
-    region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
-
-    def __str__(self):
-        return self.name
-    
-class Alert(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
-    identifier = models.CharField(max_length=255)
-    sender = models.CharField(max_length=255)
-    sent = models.DateTimeField()
-    status = models.CharField(max_length=255)
-    msg_type = models.CharField(max_length=255)
-    scope = models.CharField(max_length=255)
-    urgency = models.CharField(max_length=255)
-    severity = models.CharField(max_length=255)
-    certainty = models.CharField(max_length=255)
-    effective = models.DateTimeField()
-    effective = models.DateTimeField()
-    expires = models.DateTimeField()
-
-    area_desc = models.CharField(max_length=255)
-    event = models.CharField(max_length=255)
-    geocode_name = models.CharField(max_length=255, blank=True, default='')
-    geocode_value = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
-    country = models.ForeignKey(Country, on_delete=models.SET_DEFAULT, default='-1')
-
-    def __str__(self):
-        return self.id
+    def get_iso3s():
+        try:
+            sorted_iso3s = sorted([(country.iso3, country.iso3 + ' ' + country.name) for country in Country.objects.all()])
+            return sorted_iso3s
+        except:
+            print('ERROR GETTING ISO3S')
+            return []
 
 class Source(models.Model):
     INTERVAL_CHOICES = []
-    # [30, 45, 60, 75, 90, 105, 120]
-    for interval in range(30, 135, 15):
+    # [10, 45, 60, 75, 90, 105, 120]
+    for interval in range(10, 130, 10):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
+    FORMAT_CHOICES = [
+        ('meteoalarm', 'meteoalarm'),
+        ('capfeedphp', 'capfeedphp')
+    ]
+
     url = models.CharField(primary_key=True, max_length=255)
-    polling_interval = models.IntegerField(null=False, choices=INTERVAL_CHOICES)
-    verification_keys = models.CharField(blank=True, null=True, max_length=255)
-    iso3 = models.CharField(null=False, max_length=255)
-    format = models.CharField(null=False, max_length=255)
-    atom = models.CharField(null=False,max_length=255)
+    iso3 = models.CharField(choices = Country.get_iso3s())
+    format = models.CharField(choices=FORMAT_CHOICES)
+    polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
+    atom = models.CharField(null=False, max_length=255)
     cap = models.CharField(null=False, max_length=255)
     
     __previous_polling_interval = None
@@ -100,7 +73,8 @@ class Source(models.Model):
         self.__previous_url = self.url
 
     def __str__(self):
-        return self.url
+        name = self.format + ' ' + self.iso3 + ' ' + Country.objects.get(iso3=self.iso3).name
+        return name
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
@@ -114,8 +88,6 @@ class Source(models.Model):
         dictionary = dict()
         dictionary['url'] = self.url
         dictionary['polling_interval'] = self.polling_interval
-        if self.verification_keys != None:
-            dictionary['verification_keys'] = self.verification_keys
         dictionary['iso3'] = self.iso3
         dictionary['format'] = self.format
         dictionary['atom'] = self.atom
@@ -129,7 +101,33 @@ class SourceEncoder(json.JSONEncoder):
 
         return super().default(obj)
     
+class Alert(models.Model):
+    id = models.CharField(max_length=255, primary_key=True)
+    identifier = models.CharField(max_length=255)
+    sender = models.CharField(max_length=255)
+    senderName = models.CharField(max_length=255, default='')
+    source = models.ForeignKey(Source, on_delete=models.CASCADE)
+    sent = models.DateTimeField()
+    status = models.CharField(max_length=255)
+    msg_type = models.CharField(max_length=255)
+    scope = models.CharField(max_length=255)
+    urgency = models.CharField(max_length=255)
+    severity = models.CharField(max_length=255)
+    certainty = models.CharField(max_length=255)
+    effective = models.DateTimeField()
+    effective = models.DateTimeField()
+    expires = models.DateTimeField()
 
+    description = models.TextField(blank=True, default='')
+
+    area_desc = models.CharField(max_length=255)
+    event = models.CharField(max_length=255)
+    geocode_name = models.CharField(max_length=255, blank=True, default='')
+    geocode_value = models.CharField(max_length=255, blank=True, default='')
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, default='-1')
+
+    def __str__(self):
+        return self.id
 
 # Adds source to a periodic task
 def add_source(source):
@@ -146,22 +144,20 @@ def add_source(source):
             break
     # If there is no task with the same interval, create a new one
     if existing_task is None:
-        new_task = PeriodicTask.objects.create(
-            interval = interval_schedule,
-            name = 'poll_new_alerts',
-            task = 'cap_feed.tasks.poll_new_alerts',
-            start_time = timezone.now(),
-            kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
-        )
-        new_task.save()
+        try:
+            new_task = PeriodicTask.objects.create(
+                interval = interval_schedule,
+                name = 'poll_new_alerts_' + str(interval) + '_seconds',
+                task = 'cap_feed.tasks.poll_new_alerts',
+                start_time = timezone.now(),
+                kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
+            )
+            new_task.save()
+        except Exception as e:
+            print('crashed lol ', e)
     # If there is a task with the same interval, add the source to the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        # for kwarg_source in kwargs["sources"]:
-        #     print('hello', kwarg_source['url'], source.url)
-        #     if kwarg_source['url'] == source.url:
-        #         source_to_add = kwarg_source
-        #         break
         kwargs["sources"].append(source)
         existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
         existing_task.save()
