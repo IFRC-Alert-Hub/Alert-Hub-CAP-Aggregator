@@ -37,7 +37,7 @@ class Country(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def get_iso3s():
         try:
             sorted_iso3s = sorted([(country.iso3, country.iso3 + ' ' + country.name) for country in Country.objects.all()])
@@ -114,6 +114,7 @@ class Alert(models.Model):
     urgency = models.CharField(max_length=255)
     severity = models.CharField(max_length=255)
     certainty = models.CharField(max_length=255)
+    effective = models.DateTimeField()
     effective = models.DateTimeField()
     expires = models.DateTimeField()
 
