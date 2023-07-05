@@ -35,7 +35,7 @@ def inject_sources():
             source = Source()
             source.url = source_entry[0]
             source.polling_interval = 60
-            source.iso3 = source_entry[1]
+            source.country = Country.objects.get(iso3 = source_entry[1])
             source.format = source_entry[2]
             source.atom = source_entry[3]['atom']
             source.cap = source_entry[3]['cap']
@@ -45,25 +45,10 @@ def inject_sources():
 def inject_geographical_data():
     if Continent.objects.count() == 0:
         inject_continents()
-        # inject unknown continent for alerts without a defined continent
-        unknown_continent = Continent()
-        unknown_continent.id = -1
-        unknown_continent.name = 'Unknown'
-        unknown_continent.save()
     if Region.objects.count() == 0:
         inject_regions()
-        # inject unknown region for alerts without a defined region
-        unknown_region = Region()
-        unknown_region.id = -1
-        unknown_region.name = 'Unknown'
-        unknown_region.save()
     if Country.objects.count() == 0:
         inject_countries()
-        # inject unknown country for alerts without a defined country
-        unknown_country = Country()
-        unknown_country.id = -1
-        unknown_country.name = 'Unknown'
-        unknown_country.save()
 
 # inject continent data
 def inject_continents():
@@ -72,7 +57,6 @@ def inject_continents():
         continent_data = json.load(file)
         for continent_entry in continent_data:
             continent = Continent()
-            continent.id = continent_entry["id"]
             continent.name = continent_entry["name"]
             continent.save()
 
@@ -83,7 +67,6 @@ def inject_regions():
         region_data = json.load(file)
         for region_entry in region_data:
             region = Region()
-            region.id = region_entry["id"]
             region.name = region_entry["region_name"]
             region.centroid = region_entry["centroid"]
             coordinates = region_entry["bbox"]["coordinates"][0]
@@ -93,31 +76,40 @@ def inject_regions():
 
 # inject country data
 def inject_countries():
+    region_names = {}
+    file_path = os.path.join(module_dir, 'geographical/ifrc-regions.json')
+    with open(file_path) as file:
+        region_data = json.load(file)
+        for region_entry in region_data:
+            name = region_entry["region_name"]
+            region_id = region_entry["id"]
+            region_names[region_id] = name
+
     ifrc_countries = {}
     file_path = os.path.join(module_dir, 'geographical/ifrc-countries-and-territories.json')
     with open(file_path) as file:
         country_data = json.load(file)
-        for index, feature in enumerate(country_data):
+        for feature in country_data:
             name = feature["name"]
             region_id = feature["region"]
             iso3 = feature["iso3"]
             if ("Region" in name) or ("Cluster" in name) or (region_id is None) or (iso3 is None):
                 continue
-            ifrc_countries[iso3] = region_id
+            ifrc_countries[iso3] = region_names[region_id]
+    
     processed_iso3 = set()
     file_path = os.path.join(module_dir, 'geographical/opendatasoft-countries-and-territories.geojson')
     with open(file_path) as file:
         country_data = json.load(file)
-        for index, feature in enumerate(country_data['features']):
+        for feature in country_data['features']:
             country = Country()
-            country.id = index
             country.name = feature['properties']['name']
             country.iso3 = feature['properties']['iso3']
             status = feature['properties']['status']
             if status == 'Occupied Territory (under review)' or status == 'PT Territory':
                     continue
             if (country.iso3 in ifrc_countries):
-                country.region = Region.objects.filter(id = ifrc_countries[country.iso3]).first()
+                country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
                 country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
                 coordinates = feature['geometry']['coordinates']
                 if len(coordinates) == 1:
@@ -143,7 +135,7 @@ def poll_new_alerts(sources):
     # list of sources and configurations
     for source in sources:
         url = source["url"]
-        iso3 = source["iso3"]
+        iso3 = Country.objects.get(name = source["country"]).iso3
         format = source["format"]
         ns = {"atom":source["atom"], "cap": source["cap"]}
         match format:

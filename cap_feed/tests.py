@@ -6,12 +6,14 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Alert
+from .models import Continent, Region, Country, Source, Alert
 
 class AlertModelTests(TestCase):
+    fixtures = ['cap_feed/fixtures/test_data.json']
+
     def test_alert_source_datetime_converted_to_utc(self):
         """
-        Was the iso format cap alert datetime field with timezone offsets processed correctly to utc timezone?
+        Is the iso format cap alert datetime field with timezone offsets processed correctly to utc timezone?
         """
         cap_sent = "2023-06-24T22:00:00-05:00"
         cap_effective = "2023-06-24T22:00:00+00:00"
@@ -26,3 +28,35 @@ class AlertModelTests(TestCase):
         assert alert.sent == utc_sent
         assert alert.effective == utc_effective
         assert alert.expires == utc_expires
+
+    def test_django_timezone_is_utc(self):
+        """
+        Is the django timezone set to UTC?
+        """
+        assert timezone.get_default_timezone_name() == 'UTC'
+        assert timezone.get_current_timezone_name() == 'UTC'
+
+    def test_expired_alert_is_removed(self):
+        """
+        Is an expired alert identified and removed from the database?
+        """
+        alert = Alert()
+        alert.set_default_values()
+        alert.expires = timezone.now() - timezone.timedelta(days = 1)
+        alert.save()
+        previous_count = Alert.objects.count()
+        ap.remove_expired_alerts()
+        assert Alert.objects.count() == previous_count - 1
+
+    def test_unexpired_alert_is_not_removed(self):
+        """
+        Is an unexpired alert kept in the database?
+        """
+        alert = Alert()
+        alert.set_default_values()
+        alert.expires = timezone.now() + timezone.timedelta(days = 1)
+        alert.save()
+        previous_count = Alert.objects.count()
+        ap.remove_expired_alerts()
+        assert Alert.objects.count() == previous_count
+        alert.delete()

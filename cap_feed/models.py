@@ -10,14 +10,12 @@ from django_celery_beat.models import PeriodicTask
 # Create your models here.
 
 class Continent(models.Model):
-    id = models.CharField(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
 
     def __str__(self):
         return self.name
 
 class Region(models.Model):
-    id = models.CharField(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
     polygon = models.TextField(blank=True, default='')
     centroid = models.CharField(max_length=255, blank=True, default='')
@@ -26,26 +24,17 @@ class Region(models.Model):
         return self.name
 
 class Country(models.Model):
-    id = models.CharField(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
-    iso3 = models.CharField(max_length=3, unique=True)
+    iso3 = models.CharField(unique=True, validators=[MinValueValidator(3), MaxValueValidator(3)])
     polygon = models.TextField(blank=True, default='')
     multipolygon = models.TextField(blank=True, default='')
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, default='-1')
-    continent = models.ForeignKey(Continent, on_delete=models.CASCADE, default='-1')
+    region = models.ForeignKey(Region, on_delete=models.CASCADE)
+    continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
-        return self.name
+        return self.iso3 + ' ' + self.name
     
-    def get_iso3s():
-        try:
-            sorted_iso3s = sorted([(country.iso3, country.iso3 + ' ' + country.name) for country in Country.objects.all()])
-            return sorted_iso3s
-        except:
-            print('ERROR GETTING ISO3S')
-            return []
-
 class Source(models.Model):
     INTERVAL_CHOICES = []
     # [10, 45, 60, 75, 90, 105, 120]
@@ -58,11 +47,11 @@ class Source(models.Model):
     ]
 
     url = models.CharField(primary_key=True, max_length=255)
-    iso3 = models.CharField(choices = Country.get_iso3s())
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
-    atom = models.CharField(null=False, max_length=255)
-    cap = models.CharField(null=False, max_length=255)
+    atom = models.CharField(max_length=255)
+    cap = models.CharField(max_length=255)
     
     __previous_polling_interval = None
     __previous_url = None
@@ -73,7 +62,7 @@ class Source(models.Model):
         self.__previous_url = self.url
 
     def __str__(self):
-        name = self.format + ' ' + self.iso3 + ' ' + Country.objects.get(iso3=self.iso3).name
+        name = self.format + ' ' + str(self.country)
         return name
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
@@ -88,7 +77,7 @@ class Source(models.Model):
         dictionary = dict()
         dictionary['url'] = self.url
         dictionary['polling_interval'] = self.polling_interval
-        dictionary['iso3'] = self.iso3
+        dictionary['country'] = self.country.name
         dictionary['format'] = self.format
         dictionary['atom'] = self.atom
         dictionary['cap'] = self.cap
@@ -123,10 +112,33 @@ class Alert(models.Model):
     event = models.CharField(max_length=255)
     geocode_name = models.CharField(max_length=255, blank=True, default='')
     geocode_value = models.CharField(max_length=255, blank=True, default='')
-    country = models.ForeignKey(Country, on_delete=models.CASCADE, default='-1')
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.id
+    
+    # To fill uninteresting fields in tests with default values
+    def set_default_values(self):
+        self.id = timezone.now()
+        self.identifier = ''
+        self.sender = ''
+        self.senderName = ''
+        self.source = Source.objects.get(url = "")
+        self.sent = timezone.now()
+        self.status = ''
+        self.msg_type = ''
+        self.scope = ''
+        self.urgency = ''
+        self.severity = ''
+        self.certainty = ''
+        self.effective = timezone.now()
+        self.expires = timezone.now()
+        self.description = ''
+        self.area_desc = ''
+        self.event = ''
+        self.geocode_name = ''
+        self.geocode_value = ''
+        self.country = Country.objects.get(pk = 1)
 
 # Adds source to a periodic task
 def add_source(source):
