@@ -9,26 +9,86 @@ from django_celery_beat.models import PeriodicTask
 
 # Create your models here.
 
-class Region(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
+class Continent(models.Model):
     name = models.CharField(max_length=255)
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+class Region(models.Model):
+    name = models.CharField(max_length=255)
+    polygon = models.TextField(blank=True, default='')
     centroid = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.name
 
 class Country(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
     name = models.CharField(max_length=255)
-    iso = models.CharField(max_length=255, blank=True, default='')
-    iso3 = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
+    iso3 = models.CharField(unique=True, validators=[MinValueValidator(3), MaxValueValidator(3)])
+    polygon = models.TextField(blank=True, default='')
+    multipolygon = models.TextField(blank=True, default='')
+    region = models.ForeignKey(Region, on_delete=models.CASCADE)
+    continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
     centroid = models.CharField(max_length=255, blank=True, default='')
-    region = models.ForeignKey(Region, on_delete=models.SET_DEFAULT, default='-1')
 
     def __str__(self):
-        return self.name
+        return self.iso3 + ' ' + self.name
+
+class Source(models.Model):
+    INTERVAL_CHOICES = []
+    # [10, 45, 60, 75, 90, 105, 120]
+    for interval in range(10, 130, 10):
+        INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
+
+    FORMAT_CHOICES = [
+        ('meteoalarm', 'meteoalarm'),
+        ('capfeedphp', 'capfeedphp')
+    ]
+
+    url = models.CharField(primary_key=True, max_length=255)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    format = models.CharField(choices=FORMAT_CHOICES)
+    polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
+    atom = models.CharField(max_length=255)
+    cap = models.CharField(max_length=255)
+    
+    __previous_polling_interval = None
+    __previous_url = None
+
+    def __init__(self, *args, **kwargs):
+        super(Source, self).__init__(*args, **kwargs)
+        self.__previous_polling_interval = self.polling_interval
+        self.__previous_url = self.url
+
+    def __str__(self):
+        name = self.format + ' ' + str(self.country)
+        return name
+
+    def save(self, force_insert=False, force_update=False, *args, **kwargs):
+        if self._state.adding:
+            add_source(self)
+        else:
+            update_source(self, self.__previous_url, self.__previous_polling_interval)
+        super(Source, self).save(force_insert, force_update, *args, **kwargs)
+
+    #This function is to be used for serialisation
+    def to_dict(self):
+        dictionary = dict()
+        dictionary['url'] = self.url
+        dictionary['polling_interval'] = self.polling_interval
+        dictionary['country'] = self.country.name
+        dictionary['format'] = self.format
+        dictionary['atom'] = self.atom
+        dictionary['cap'] = self.cap
+        return dictionary
+
+class SourceEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Source):
+            return obj.to_dict()
+
+        return super().default(obj)
     
 
 class Region(models.Model):
@@ -56,6 +116,8 @@ class Alert(models.Model):
     id = models.CharField(max_length=255, primary_key=True)
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
+    senderName = models.CharField(max_length=255, default='')
+    source = models.ForeignKey(Source, on_delete=models.CASCADE)
     sent = models.DateTimeField()
     status = models.CharField(max_length=255)
     msg_type = models.CharField(max_length=255)
@@ -67,17 +129,41 @@ class Alert(models.Model):
     effective = models.DateTimeField()
     expires = models.DateTimeField()
 
+    description = models.TextField(blank=True, default='')
+
     area_desc = models.CharField(max_length=255)
     event = models.CharField(max_length=255)
     geocode_name = models.CharField(max_length=255, blank=True, default='')
     geocode_value = models.CharField(max_length=255, blank=True, default='')
-    polygon = models.TextField(max_length=16383, blank=True, default='')
-    country = models.ForeignKey(Country, on_delete=models.SET_DEFAULT, default='-1')
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.id
+      
+    # To fill uninteresting fields in tests with default values
+    def set_default_values(self):
+        self.id = timezone.now()
+        self.identifier = ''
+        self.sender = ''
+        self.senderName = ''
+        self.source = Source.objects.get(url = "")
+        self.sent = timezone.now()
+        self.status = ''
+        self.msg_type = ''
+        self.scope = ''
+        self.urgency = ''
+        self.severity = ''
+        self.certainty = ''
+        self.effective = timezone.now()
+        self.expires = timezone.now()
+        self.description = ''
+        self.area_desc = ''
+        self.event = ''
+        self.geocode_name = ''
+        self.geocode_value = ''
+        self.country = Country.objects.get(pk = 1)
 
-        # This function is to be used for serialisation
+    # This function is to be used for serialisation
     def to_dict(self):
         dictionary = dict()
         dictionary['id'] = self.id
@@ -116,66 +202,12 @@ class Alert(models.Model):
 
         return dictionary
 
-class Source(models.Model):
-    INTERVAL_CHOICES = []
-    # [30, 45, 60, 75, 90, 105, 120]
-    for interval in range(30, 135, 15):
-        INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
-
-    url = models.CharField(primary_key=True, max_length=255)
-    polling_interval = models.IntegerField(null=False, choices=INTERVAL_CHOICES)
-    verification_keys = models.CharField(blank=True, null=True, max_length=255)
-    iso3 = models.CharField(null=False, max_length=255)
-    format = models.CharField(null=False, max_length=255)
-    atom = models.CharField(null=False,max_length=255)
-    cap = models.CharField(null=False, max_length=255)
-    
-    __previous_polling_interval = None
-    __previous_url = None
-
-    def __init__(self, *args, **kwargs):
-        super(Source, self).__init__(*args, **kwargs)
-        self.__previous_polling_interval = self.polling_interval
-        self.__previous_url = self.url
-
-    def __str__(self):
-        return self.url
-
-    def save(self, force_insert=False, force_update=False, *args, **kwargs):
-        if self._state.adding:
-            add_source(self)
-        else:
-            update_source(self, self.__previous_url, self.__previous_polling_interval)
-        super(Source, self).save(force_insert, force_update, *args, **kwargs)
-
-    #This function is to be used for serialisation
-    def to_dict(self):
-        dictionary = dict()
-        dictionary['url'] = self.url
-        dictionary['polling_interval'] = self.polling_interval
-        if self.verification_keys != None:
-            dictionary['verification_keys'] = self.verification_keys
-        dictionary['iso3'] = self.iso3
-        dictionary['format'] = self.format
-        dictionary['atom'] = self.atom
-        dictionary['cap'] = self.cap
-        return dictionary
-
-class SourceEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Source):
-            return obj.to_dict()
-
-        return super().default(obj)
-
-
 class AlertEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Alert):
             return obj.to_dict()
 
         return super().default(obj)
-
 
 # Adds source to a periodic task
 def add_source(source):
@@ -192,22 +224,20 @@ def add_source(source):
             break
     # If there is no task with the same interval, create a new one
     if existing_task is None:
-        new_task = PeriodicTask.objects.create(
-            interval = interval_schedule,
-            name = 'poll_new_alerts',
-            task = 'cap_feed.tasks.poll_new_alerts',
-            start_time = timezone.now(),
-            kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
-        )
-        new_task.save()
+        try:
+            new_task = PeriodicTask.objects.create(
+                interval = interval_schedule,
+                name = 'poll_new_alerts_' + str(interval) + '_seconds',
+                task = 'cap_feed.tasks.poll_new_alerts',
+                start_time = timezone.now(),
+                kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
+            )
+            new_task.save()
+        except Exception as e:
+            print('crashed lol ', e)
     # If there is a task with the same interval, add the source to the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        # for kwarg_source in kwargs["sources"]:
-        #     print('hello', kwarg_source['url'], source.url)
-        #     if kwarg_source['url'] == source.url:
-        #         source_to_add = kwarg_source
-        #         break
         kwargs["sources"].append(source)
         existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
         existing_task.save()
