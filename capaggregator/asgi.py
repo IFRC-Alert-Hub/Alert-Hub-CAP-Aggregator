@@ -11,28 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.settings')
 
-from channels.auth import AuthMiddlewareStack
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.security.websocket import AllowedHostsOriginValidator
-from django.core.asgi import get_asgi_application
-from dotenv import load_dotenv
-
-import capaggregator.routing
-
-if 'WEBSITE_HOSTNAME' not in os.environ:
-    load_dotenv(".env")
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.settings')
-else:
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.production')
-# Initialize Django ASGI application early to ensure the AppRegistry
-# is populated before importing code that may import ORM models.
-django_asgi_app = get_asgi_application()
-
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-            AuthMiddlewareStack(URLRouter(capaggregator.routing.websocket_urlpatterns))
-        ),
-})
+application = get_asgi_application()
