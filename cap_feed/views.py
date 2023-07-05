@@ -11,16 +11,13 @@ from .models import Alert, Source, SourceEncoder
 
 
 def index(request):
-    try:
-        ap.inject_unknown_regions()
-        ap.inject_sources()
-        latest_alert_list = Alert.objects.order_by("-sent")[:10]
-        template = loader.get_template("cap_feed/index.html")
-        context = {
-            "latest_alert_list": latest_alert_list,
-        }
-    except Exception as e:
-        print(f"Bug is {e}")
+    ap.inject_unknown_regions()
+    ap.inject_sources()
+    latest_alert_list = Alert.objects.order_by("-sent")[:10]
+    template = loader.get_template("cap_feed/index.html")
+    context = {
+        "latest_alert_list": latest_alert_list,
+    }
     return HttpResponse(template.render(context, request))
 
 def polling_alerts(request):
