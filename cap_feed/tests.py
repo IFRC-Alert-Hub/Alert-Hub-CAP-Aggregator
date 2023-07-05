@@ -43,7 +43,11 @@ class AlertModelTests(TestCase):
         alert = Alert()
         alert.set_default_values()
         alert.expires = timezone.now() - timezone.timedelta(days = 1)
-        alert.save()
+        try:
+            alert.save()
+        # catch redis connection errors, not relevant for this test
+        except ValueError:
+            pass
         previous_count = Alert.objects.count()
         ap.remove_expired_alerts()
         assert Alert.objects.count() == previous_count - 1
@@ -55,7 +59,11 @@ class AlertModelTests(TestCase):
         alert = Alert()
         alert.set_default_values()
         alert.expires = timezone.now() + timezone.timedelta(days = 1)
-        alert.save()
+        try:
+            alert.save()
+        # catch redis connection errors, not relevant for this test
+        except ValueError:
+            pass
         previous_count = Alert.objects.count()
         ap.remove_expired_alerts()
         assert Alert.objects.count() == previous_count

@@ -121,44 +121,31 @@ class Alert(models.Model):
     def to_dict(self):
         dictionary = dict()
         dictionary['id'] = self.id
-        if self.identifier is not None:
-            dictionary['identifier'] = self.identifier
-        if self.sender is not None:
-            dictionary['sender'] = self.sender
-        if self.sent is not None:
-            dictionary['sent'] = self.sent.strftime("%Y-%m-%d %H:%M:%S")
-        if self.status is not None:
-            dictionary['status'] = self.status
-        if self.msg_type is not None:
-            dictionary['msg_type'] = self.msg_type
-        if self.scope is not None:
-            dictionary['scope'] = self.scope
+        dictionary['identifier'] = self.identifier
+        dictionary['sender'] = self.sender
+        dictionary['senderName'] = self.senderName
+        dictionary['source'] = self.source.url
+        dictionary['sent'] = str(self.sent)
+        dictionary['status'] = self.status
+        dictionary['msg_type'] = self.msg_type
+        dictionary['scope'] = self.scope
         dictionary['urgency'] = self.urgency
         dictionary['severity'] = self.severity
         dictionary['certainty'] = self.certainty
-
-        if self.effective is not None:
-            dictionary['effective'] = self.effective.strftime("%Y-%m-%d %H:%M:%S")
-        if self.expires is not None:
-            dictionary['expires'] = self.expires.strftime("%Y-%m-%d %H:%M:%S")
-        if self.area_desc is not None:
-            dictionary['area_desc'] = self.area_desc
-        if self.event is not None:
-            dictionary['event'] = self.event
-        if self.geocode_name is not None:
-            dictionary['geocode_name'] = self.geocode_name
-        if self.geocode_value is not None:
-            dictionary['geocode_value'] = self.geocode_value
-        if self.polygon is not None:
-            dictionary['polygon'] = self.polygon
-        dictionary['country_id'] = self.country.id
-        dictionary['country_name'] = self.country.name
+        dictionary['effective'] = str(self.effective)
+        dictionary['expires'] = str(self.expires)
+        dictionary['description'] = self.description
+        dictionary['area_desc'] = self.area_desc
+        dictionary['event'] = self.event
+        dictionary['geocode_name'] = self.geocode_name
+        dictionary['geocode_value'] = self.geocode_value
+        dictionary['country'] = self.country.name
 
         return dictionary
     
     # To fill uninteresting fields in tests with default values
     def set_default_values(self):
-        self.id = timezone.now()
+        self.id = str(timezone.now())
         self.identifier = ''
         self.sender = ''
         self.senderName = ''

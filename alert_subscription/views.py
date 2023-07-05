@@ -15,6 +15,6 @@ def send_alert_to_channel(alert):
     AsyncToSync(channel_layer.group_send)(
         "Alert_Transfer",
         {"type": "alert.transfer",
-         "text": json.dumps(alert, cls=AlertEncoder)
+        "text": json.dumps(alert, cls=AlertEncoder)
         }
     )
