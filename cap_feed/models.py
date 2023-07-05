@@ -117,6 +117,45 @@ class Alert(models.Model):
     def __str__(self):
         return self.id
     
+    # This function is to be used for serialisation
+    def to_dict(self):
+        dictionary = dict()
+        dictionary['id'] = self.id
+        if self.identifier is not None:
+            dictionary['identifier'] = self.identifier
+        if self.sender is not None:
+            dictionary['sender'] = self.sender
+        if self.sent is not None:
+            dictionary['sent'] = self.sent.strftime("%Y-%m-%d %H:%M:%S")
+        if self.status is not None:
+            dictionary['status'] = self.status
+        if self.msg_type is not None:
+            dictionary['msg_type'] = self.msg_type
+        if self.scope is not None:
+            dictionary['scope'] = self.scope
+        dictionary['urgency'] = self.urgency
+        dictionary['severity'] = self.severity
+        dictionary['certainty'] = self.certainty
+
+        if self.effective is not None:
+            dictionary['effective'] = self.effective.strftime("%Y-%m-%d %H:%M:%S")
+        if self.expires is not None:
+            dictionary['expires'] = self.expires.strftime("%Y-%m-%d %H:%M:%S")
+        if self.area_desc is not None:
+            dictionary['area_desc'] = self.area_desc
+        if self.event is not None:
+            dictionary['event'] = self.event
+        if self.geocode_name is not None:
+            dictionary['geocode_name'] = self.geocode_name
+        if self.geocode_value is not None:
+            dictionary['geocode_value'] = self.geocode_value
+        if self.polygon is not None:
+            dictionary['polygon'] = self.polygon
+        dictionary['country_id'] = self.country.id
+        dictionary['country_name'] = self.country.name
+
+        return dictionary
+    
     # To fill uninteresting fields in tests with default values
     def set_default_values(self):
         self.id = timezone.now()
@@ -139,6 +178,13 @@ class Alert(models.Model):
         self.geocode_name = ''
         self.geocode_value = ''
         self.country = Country.objects.get(pk = 1)
+
+class AlertEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Alert):
+            return obj.to_dict()
+
+        return super().default(obj)
 
 # Adds source to a periodic task
 def add_source(source):
