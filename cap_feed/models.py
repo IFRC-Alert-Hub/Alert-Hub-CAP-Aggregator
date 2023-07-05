@@ -117,9 +117,35 @@ class Alert(models.Model):
     def __str__(self):
         return self.id
     
+    # This function is to be used for serialisation
+    def to_dict(self):
+        dictionary = dict()
+        dictionary['id'] = self.id
+        dictionary['identifier'] = self.identifier
+        dictionary['sender'] = self.sender
+        dictionary['senderName'] = self.senderName
+        dictionary['source'] = self.source.url
+        dictionary['sent'] = str(self.sent)
+        dictionary['status'] = self.status
+        dictionary['msg_type'] = self.msg_type
+        dictionary['scope'] = self.scope
+        dictionary['urgency'] = self.urgency
+        dictionary['severity'] = self.severity
+        dictionary['certainty'] = self.certainty
+        dictionary['effective'] = str(self.effective)
+        dictionary['expires'] = str(self.expires)
+        dictionary['description'] = self.description
+        dictionary['area_desc'] = self.area_desc
+        dictionary['event'] = self.event
+        dictionary['geocode_name'] = self.geocode_name
+        dictionary['geocode_value'] = self.geocode_value
+        dictionary['country'] = self.country.name
+
+        return dictionary
+    
     # To fill uninteresting fields in tests with default values
     def set_default_values(self):
-        self.id = timezone.now()
+        self.id = str(timezone.now())
         self.identifier = ''
         self.sender = ''
         self.senderName = ''
@@ -139,6 +165,13 @@ class Alert(models.Model):
         self.geocode_name = ''
         self.geocode_value = ''
         self.country = Country.objects.get(pk = 1)
+
+class AlertEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Alert):
+            return obj.to_dict()
+
+        return super().default(obj)
 
 # Adds source to a periodic task
 def add_source(source):
