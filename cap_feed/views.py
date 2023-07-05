@@ -28,3 +28,4 @@ def index(request):
         "latest_alert_list": latest_alert_list,
     }
     return HttpResponse(template.render(context, request))
+  

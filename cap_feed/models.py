@@ -34,7 +34,7 @@ class Country(models.Model):
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
-    
+
 class Source(models.Model):
     INTERVAL_CHOICES = []
     # [10, 45, 60, 75, 90, 105, 120]
