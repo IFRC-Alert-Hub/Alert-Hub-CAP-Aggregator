@@ -60,6 +60,17 @@ def inject_continents():
             continent.name = continent_entry["name"]
             continent.save()
 
+# inject continent data
+def inject_continents():
+    file_path = os.path.join(module_dir, 'geographical/continents.json')
+    with open(file_path) as file:
+        continent_data = json.load(file)
+        for continent_entry in continent_data:
+            continent = Continent()
+            continent.id = continent_entry["id"]
+            continent.name = continent_entry["name"]
+            continent.save()
+
 # inject region data
 def inject_regions():
     file_path = os.path.join(module_dir, 'geographical/ifrc-regions.json')

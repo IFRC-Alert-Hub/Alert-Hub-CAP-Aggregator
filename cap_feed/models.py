@@ -104,6 +104,7 @@ class Alert(models.Model):
     severity = models.CharField(max_length=255)
     certainty = models.CharField(max_length=255)
     effective = models.DateTimeField()
+    effective = models.DateTimeField()
     expires = models.DateTimeField()
 
     description = models.TextField(blank=True, default='')
