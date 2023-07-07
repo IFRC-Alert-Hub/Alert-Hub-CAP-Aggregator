@@ -19,7 +19,6 @@ from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
 from dotenv import load_dotenv
 import django
-
 import capaggregator.routing
 
 if 'WEBSITE_HOSTNAME' not in os.environ:
@@ -27,7 +26,6 @@ if 'WEBSITE_HOSTNAME' not in os.environ:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.settings')
 else:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'capaggregator.production')
-django.setup()
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
