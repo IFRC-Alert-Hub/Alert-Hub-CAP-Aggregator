@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.0/howto/deployment/asgi/
 
 import os
 
+from asgiref.wsgi import WsgiToAsgi
 from django.core.asgi import get_asgi_application
 
 import os
@@ -29,7 +30,7 @@ else:
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
-django_asgi_app = get_asgi_application()
+django_asgi_app = WsgiToAsgi(get_asgi_application())
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
