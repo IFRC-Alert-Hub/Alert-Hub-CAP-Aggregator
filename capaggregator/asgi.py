@@ -31,7 +31,7 @@ else:
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
-django_asgi_app = WsgiToAsgi(get_wsgi_application())
+django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
