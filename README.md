@@ -56,7 +56,7 @@ Alerts are aggregated by countries, regions, and continents. Using filtered quer
 
 Each alerting source and their alerts belong to a country, and each country belongs to a particular region and continent. Therefore, it is necessary for regions and continents to exist first before countries can be added (although all regions and continents already exist in the system). Similarly, a new country needs be created by an admin user before a new alerting source can be added for that country.
 
-Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and sources belonging to the deleted countries would also be deleted. This current behaviour is clearly unsafe and possibly undesirable but is convenient for development. This can be changed after some discussion. Lastly, deleting an alerting source does not delete existing alerts from the same country. This is because alerts belong to the country of the alerting source, but not to the sources themselves.
+Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and sources belonging to the deleted countries would also be deleted. This current behaviour is possibly unsafe and undesirable but is convenient for development. This can be changed after some discussion if necessary. Lastly, deleting an alerting source also deletes existing alerts from the same country.
 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter sources by format (e.g., meteoalarm) or search for sources belonging to a particular country using the search bar on the same page.
 
