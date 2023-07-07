@@ -18,6 +18,7 @@ from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
+from django.core.wsgi import get_wsgi_application
 from dotenv import load_dotenv
 import django
 import capaggregator.routing
@@ -30,7 +31,7 @@ else:
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
-django_asgi_app = WsgiToAsgi(get_asgi_application())
+django_asgi_app = WsgiToAsgi(get_wsgi_application())
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
