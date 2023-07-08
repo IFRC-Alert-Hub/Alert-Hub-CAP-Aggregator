@@ -6,8 +6,9 @@ from django_celery_results.models import GroupResult
 
 
 class AlertAdmin(admin.ModelAdmin):
-    list_display = ["id", "source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
-    list_filter = ["source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
+    #list_display = ["id", "source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
+    #list_filter = ["source", "urgency", "severity", "certainty", "sent", "effective", "expires"]
+    pass
 
 class CountryAdmin(admin.ModelAdmin):
     list_display = ["name", "iso3", "region", "continent"]

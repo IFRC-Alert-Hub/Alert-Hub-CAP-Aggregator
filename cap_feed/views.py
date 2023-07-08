@@ -1,26 +1,22 @@
-import json
-import cap_feed.alert_processing as ap
-
+import cap_feed.data_injector as dl
 from django.http import HttpResponse
-from django.utils import timezone
 from django.template import loader
-from django_celery_beat.models import IntervalSchedule, PeriodicTask
-from django_celery_beat.models import PeriodicTask
-from .models import Alert, Source, SourceEncoder
+from .models import Alert, Source
+
+import cap_feed.alert_processor as ap
 
 
 
 def index(request):
     try:
-        ap.inject_geographical_data()
+        dl.inject_geographical_data()
+        if Source.objects.count() == 0:
+            dl.inject_sources()
+        #ap.poll_new_alerts()
+        #ap.remove_expired_alerts()
     except Exception as e:
         print(e)
-        return HttpResponse(f"Error while injecting geographical data {e}")
-    try:
-        ap.inject_sources()
-    except Exception as e:
-        print(e)
-        return HttpResponse(f"Error while injecting source data {e}")
+        return HttpResponse(f"Error while injecting data {e}")
 
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")

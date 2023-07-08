@@ -1,6 +1,6 @@
 import pytz
 from datetime import datetime
-import cap_feed.alert_processing as ap
+import cap_feed.alert_processor as ap
 
 from django.test import TestCase
 from django.urls import reverse
