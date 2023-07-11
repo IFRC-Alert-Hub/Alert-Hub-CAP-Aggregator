@@ -79,7 +79,7 @@ class Source(models.Model):
     def to_dict(self):
         source_dict = dict()
         source_dict['url'] = self.url
-        source_dict['country'] = self.country.name
+        source_dict['country'] = self.country.iso3
         source_dict['format'] = self.format
         source_dict['polling_interval'] = self.polling_interval
         source_dict['atom'] = self.atom
