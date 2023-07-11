@@ -1,8 +1,12 @@
 import graphene
 from graphene_django import DjangoObjectType
-from cap_feed.models import Continent, Region, Country, Alert
+from cap_feed.models import Continent, Region, Country, Alert, AlertInfo
 
 
+
+class AlertInfoType(DjangoObjectType):
+    class Meta:
+        model = AlertInfo
 
 class AlertType(DjangoObjectType):
     class Meta:
@@ -23,6 +27,7 @@ class CountryType(DjangoObjectType):
 
 class Query(graphene.ObjectType):
     list_alert=graphene.List(AlertType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
+    list_alert_info=graphene.List(AlertInfoType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
     list_continent=graphene.List(ContinentType)
     list_country=graphene.List(CountryType, region_id=graphene.String(), continent_id=graphene.String())
     list_region=graphene.List(RegionType)
@@ -39,6 +44,19 @@ class Query(graphene.ObjectType):
             return Alert.objects.filter(**filter).all()
 
         return Alert.objects.all()
+    
+    def resolve_list_alert_info(root, info, iso3=None, region_id=None, continent_id=None, **kwargs):
+        filter = dict()
+        if iso3:
+            filter['alert__country__iso3'] = iso3
+        if region_id:
+            filter['alert__country__region'] = region_id
+        if continent_id:
+            filter['alert__country__continent'] = continent_id
+        if len(filter) > 0:
+            return AlertInfo.objects.filter(**filter).all()
+
+        return AlertInfo.objects.all()
     
     def resolve_list_continent(root, info):
         return Continent.objects.all()

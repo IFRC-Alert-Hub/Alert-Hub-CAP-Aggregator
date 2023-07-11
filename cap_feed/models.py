@@ -1,6 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 import json
+import time
+from datetime import timedelta
 
 
 from django.utils import timezone
@@ -43,15 +45,16 @@ class Source(models.Model):
 
     FORMAT_CHOICES = [
         ('meteoalarm', 'meteoalarm'),
-        ('capfeedphp', 'capfeedphp')
+        ('aws', 'aws'),
+        ('nws_us', 'nws_us')
     ]
 
     url = models.CharField(primary_key=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
-    atom = models.CharField(max_length=255)
-    cap = models.CharField(max_length=255)
+    atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
+    cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
     
     __previous_polling_interval = None
     __previous_url = None
@@ -72,16 +75,16 @@ class Source(models.Model):
             update_source(self, self.__previous_url, self.__previous_polling_interval)
         super(Source, self).save(force_insert, force_update, *args, **kwargs)
 
-    #This function is to be used for serialisation
+    # For serialization
     def to_dict(self):
-        dictionary = dict()
-        dictionary['url'] = self.url
-        dictionary['polling_interval'] = self.polling_interval
-        dictionary['country'] = self.country.name
-        dictionary['format'] = self.format
-        dictionary['atom'] = self.atom
-        dictionary['cap'] = self.cap
-        return dictionary
+        source_dict = dict()
+        source_dict['url'] = self.url
+        source_dict['country'] = self.country.name
+        source_dict['format'] = self.format
+        source_dict['polling_interval'] = self.polling_interval
+        source_dict['atom'] = self.atom
+        source_dict['cap'] = self.cap
+        return source_dict
 
 class SourceEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -91,81 +94,69 @@ class SourceEncoder(json.JSONEncoder):
         return super().default(obj)
     
 class Alert(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
+    STATUS_CHOICES = [
+        ('Actual', 'Actual'),
+        ('Exercise', 'Exercise'),
+        ('System', 'System'),
+        ('Test', 'Test'),
+        ('Draft', 'Draft')
+    ]
+
+    MSG_TYPE_CHOICES = [
+        ('Alert', 'Alert'),
+        ('Update', 'Update'),
+        ('Cancel', 'Cancel'),
+        ('Ack', 'Ack'),
+        ('Error', 'Error')
+    ]
+
+    SCOPE_CHOICES = [
+        ('Public', 'Public'),
+        ('Restricted', 'Restricted'),
+        ('Private', 'Private')
+    ]
+
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    source_feed = models.ForeignKey(Source, on_delete=models.CASCADE)
+    id = models.CharField(primary_key=True, max_length=255)
+
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
-    senderName = models.CharField(max_length=255, default='')
-    source = models.ForeignKey(Source, on_delete=models.CASCADE)
     sent = models.DateTimeField()
-    status = models.CharField(max_length=255)
-    msg_type = models.CharField(max_length=255)
-    scope = models.CharField(max_length=255)
-    urgency = models.CharField(max_length=255)
-    severity = models.CharField(max_length=255)
-    certainty = models.CharField(max_length=255)
-    effective = models.DateTimeField()
-    expires = models.DateTimeField()
-
-    description = models.TextField(blank=True, default='')
-
-    area_desc = models.CharField(max_length=255)
-    event = models.CharField(max_length=255)
-    geocode_name = models.CharField(max_length=255, blank=True, default='')
-    geocode_value = models.CharField(max_length=255, blank=True, default='')
-    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    status = models.CharField(choices = STATUS_CHOICES)
+    msg_type = models.CharField(choices = MSG_TYPE_CHOICES)
+    source = models.CharField(max_length=255, blank=True, default='')
+    scope = models.CharField(choices = SCOPE_CHOICES)
+    restriction = models.CharField(max_length=255, blank=True, default='')
+    addresses = models.TextField(blank=True, default='')
+    code = models.CharField(max_length=255, blank=True, default='')
+    note = models.TextField(blank=True, default='')
+    references = models.TextField(blank=True, default='')
+    incidents = models.TextField(blank=True, default='')
 
     def __str__(self):
         return self.id
     
-    # This function is to be used for serialisation
+    # For serialization
     def to_dict(self):
-        dictionary = dict()
-        dictionary['id'] = self.id
-        dictionary['identifier'] = self.identifier
-        dictionary['sender'] = self.sender
-        dictionary['senderName'] = self.senderName
-        dictionary['source'] = self.source.url
-        dictionary['sent'] = str(self.sent)
-        dictionary['status'] = self.status
-        dictionary['msg_type'] = self.msg_type
-        dictionary['scope'] = self.scope
-        dictionary['urgency'] = self.urgency
-        dictionary['severity'] = self.severity
-        dictionary['certainty'] = self.certainty
-        dictionary['effective'] = str(self.effective)
-        dictionary['expires'] = str(self.expires)
-        dictionary['description'] = self.description
-        dictionary['area_desc'] = self.area_desc
-        dictionary['event'] = self.event
-        dictionary['geocode_name'] = self.geocode_name
-        dictionary['geocode_value'] = self.geocode_value
-        dictionary['country_id'] = self.country.id
-        dictionary['country_name'] = self.country.name
-
-        return dictionary
-    
-    # To fill uninteresting fields in tests with default values
-    def set_default_values(self):
-        self.id = str(timezone.now())
-        self.identifier = ''
-        self.sender = ''
-        self.senderName = ''
-        self.source = Source.objects.get(url = "")
-        self.sent = timezone.now()
-        self.status = ''
-        self.msg_type = ''
-        self.scope = ''
-        self.urgency = ''
-        self.severity = ''
-        self.certainty = ''
-        self.effective = timezone.now()
-        self.expires = timezone.now()
-        self.description = ''
-        self.area_desc = ''
-        self.event = ''
-        self.geocode_name = ''
-        self.geocode_value = ''
-        self.country = Country.objects.get(pk = 1)
+        alert_dict = dict()
+        alert_dict['country'] = self.country.iso3
+        alert_dict['source_feed'] = self.source_feed.url
+        alert_dict['id'] = self.id
+        alert_dict['identifier'] = self.identifier
+        alert_dict['sender'] = self.sender
+        alert_dict['sent'] = str(self.sent)
+        alert_dict['status'] = self.status
+        alert_dict['msg_type'] = self.msg_type
+        alert_dict['source'] = self.source
+        alert_dict['scope'] = self.scope
+        alert_dict['restriction'] = self.restriction
+        alert_dict['addresses'] = self.addresses
+        alert_dict['code'] = self.code
+        alert_dict['note'] = self.note
+        alert_dict['references'] = self.references
+        alert_dict['incidents'] = self.incidents
+        return alert_dict
 
 class AlertEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -173,6 +164,86 @@ class AlertEncoder(json.JSONEncoder):
             return obj.to_dict()
 
         return super().default(obj)
+    
+class AlertInfo(models.Model):
+    CATEGORY_CHOICES = [
+        ('Geo', 'Geo'),
+        ('Met', 'Met'),
+        ('Safety', 'Safety'),
+        ('Security', 'Security'),
+        ('Rescue', 'Rescue'),
+        ('Fire', 'Fire'),
+        ('Health', 'Health'),
+        ('Env', 'Env'),
+        ('Transport', 'Transport'),
+        ('Infra', 'Infra'),
+        ('CBRNE', 'CBRNE'),
+        ('Other', 'Other')
+    ]
+
+    RESPONSE_TYPE_CHOICES = [
+        ('Shelter', 'Shelter'),
+        ('Evacuate', 'Evacuate'),
+        ('Prepare', 'Prepare'),
+        ('Execute', 'Execute'),
+        ('Avoid', 'Avoid'),
+        ('Monitor', 'Monitor'),
+        ('Assess', 'Assess'),
+        ('AllClear', 'AllClear'),
+        ('None', 'None')
+    ]
+
+    URGENCY_CHOICES = [
+        ('Immediate', 'Immediate'),
+        ('Expected', 'Expected'),
+        ('Future', 'Future'),
+        ('Past', 'Past'),
+        ('Unknown', 'Unknown')
+    ]
+
+    SEVERITY_CHOICES = [
+        ('Extreme', 'Extreme'),
+        ('Severe', 'Severe'),
+        ('Moderate', 'Moderate'),
+        ('Minor', 'Minor'),
+        ('Unknown', 'Unknown')
+    ]
+
+    CERTAINTY_CHOICES = [
+        ('Observed', 'Observed'),
+        ('Likely', 'Likely'),
+        ('Possible', 'Possible'),
+        ('Unlikely', 'Unlikely'),
+        ('Unknown', 'Unknown')
+    ]
+
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
+    
+    language = models.CharField(max_length=255, blank=True, default='en-US')
+    category = models.CharField(choices = CATEGORY_CHOICES)
+    event = models.CharField(max_length=255)
+    response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, blank=True, default='')
+    urgency = models.CharField(choices = URGENCY_CHOICES)
+    severity = models.CharField(choices = SEVERITY_CHOICES)
+    certainty = models.CharField(choices = CERTAINTY_CHOICES)
+    audience = models.CharField(blank=True, default='')
+    event_code = models.CharField(max_length=255, blank=True, default='')
+    #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
+    effective = models.DateTimeField(blank=True, default=timezone.now)
+    onset = models.DateTimeField(blank=True, null=True)
+    expires = models.DateTimeField(blank=True, default=(timezone.now() + timedelta(days=1)))
+    sender_name = models.CharField(max_length=255, blank=True, default='')
+    headline = models.CharField(max_length=255, blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    instruction = models.TextField(blank=True, default='')
+    web = models.URLField(blank=True, null=True)
+    contact = models.CharField(max_length=255, blank=True, default='')
+    parameter = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.alert.id + ' ' + self.language
+
+
 
 # Adds source to a periodic task
 def add_source(source):
@@ -199,7 +270,7 @@ def add_source(source):
             )
             new_task.save()
         except Exception as e:
-            print('crashed lol ', e)
+            print('Error adding new periodic task', e)
     # If there is a task with the same interval, add the source to the task
     else:
         kwargs = json.loads(existing_task.kwargs)
