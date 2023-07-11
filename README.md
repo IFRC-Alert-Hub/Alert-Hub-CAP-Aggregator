@@ -79,6 +79,6 @@ celery -A capaggregator beat --detach -l info
 
 Start celery worker and sceduler for local development:
 ```
-celery -A capaggregator worker --pool=solo -l info
+celery -A capaggregator worker -l info --pool=solo
 celery -A capaggregator beat -l info
 ```
