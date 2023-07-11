@@ -45,8 +45,7 @@ class Source(models.Model):
 
     FORMAT_CHOICES = [
         ('meteoalarm', 'meteoalarm'),
-        ('capfeedphp', 'capfeedphp'),
-        ('capusphp', 'capusphp')
+        ('aws', 'aws')
     ]
 
     url = models.CharField(primary_key=True, max_length=255)
@@ -119,19 +118,20 @@ class Alert(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     source_feed = models.ForeignKey(Source, on_delete=models.CASCADE)
     id = models.CharField(primary_key=True, max_length=255)
+
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
     sent = models.DateTimeField()
     status = models.CharField(choices = STATUS_CHOICES)
     msg_type = models.CharField(choices = MSG_TYPE_CHOICES)
-    source = models.CharField(max_length=255, null=True)
+    source = models.CharField(max_length=255, blank=True, default='')
     scope = models.CharField(choices = SCOPE_CHOICES)
-    restriction = models.CharField(max_length=255, null=True)
-    addresses = models.TextField(null=True)
-    code = models.CharField(max_length=255, null=True)
-    note = models.TextField(null=True)
-    references = models.TextField(null=True)
-    incidents = models.TextField(null=True)
+    restriction = models.CharField(max_length=255, blank=True, default='')
+    addresses = models.TextField(blank=True, default='')
+    code = models.CharField(max_length=255, blank=True, default='')
+    note = models.TextField(blank=True, default='')
+    references = models.TextField(blank=True, default='')
+    incidents = models.TextField(blank=True, default='')
 
     def __str__(self):
         return self.id
@@ -167,7 +167,7 @@ class AlertEncoder(json.JSONEncoder):
 class AlertInfo(models.Model):
     CATEGORY_CHOICES = [
         ('Geo', 'Geo'),
-        ('capfeedphp', 'Met'),
+        ('Met', 'Met'),
         ('Safety', 'Safety'),
         ('Security', 'Security'),
         ('Rescue', 'Rescue'),
@@ -184,6 +184,7 @@ class AlertInfo(models.Model):
         ('Shelter', 'Shelter'),
         ('Evacuate', 'Evacuate'),
         ('Prepare', 'Prepare'),
+        ('Execute', 'Execute'),
         ('Avoid', 'Avoid'),
         ('Monitor', 'Monitor'),
         ('Assess', 'Assess'),
@@ -216,26 +217,27 @@ class AlertInfo(models.Model):
     ]
 
     alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
-    language = models.CharField(max_length=255, default='en-US')
+    
+    language = models.CharField(max_length=255, blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
     event = models.CharField(max_length=255)
-    response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, null=True)
+    response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, blank=True, default='')
     urgency = models.CharField(choices = URGENCY_CHOICES)
     severity = models.CharField(choices = SEVERITY_CHOICES)
     certainty = models.CharField(choices = CERTAINTY_CHOICES)
-    audience = models.CharField(null=True)
-    event_code = models.CharField(max_length=255, null=True)
+    audience = models.CharField(blank=True, default='')
+    event_code = models.CharField(max_length=255, blank=True, default='')
     #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
-    effective = models.DateTimeField(default=timezone.now)
-    onset = models.DateTimeField(null=True)
-    expires = models.DateTimeField(default=(timezone.now() + timedelta(days=1)))
-    sender_name = models.CharField(max_length=255, null=True)
-    headline = models.CharField(max_length=255, null=True)
-    description = models.TextField(null=True)
-    instruction = models.TextField(null=True)
-    web = models.URLField(null=True)
-    contact = models.CharField(max_length=255, null=True)
-    parameter = models.CharField(max_length=255, null=True)
+    effective = models.DateTimeField(blank=True, default=timezone.now)
+    onset = models.DateTimeField(blank=True, null=True)
+    expires = models.DateTimeField(blank=True, default=(timezone.now() + timedelta(days=1)))
+    sender_name = models.CharField(max_length=255, blank=True, default='')
+    headline = models.CharField(max_length=255, blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    instruction = models.TextField(blank=True, default='')
+    web = models.URLField(blank=True, null=True)
+    contact = models.CharField(max_length=255, blank=True, default='')
+    parameter = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.alert.id + ' ' + self.language

@@ -107,8 +107,9 @@ def inject_sources():
     # this could be converted to a fixture
     source_data = [
         ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        #("https://alert.metservice.gov.jm/capfeed.php", "JAM", "capfeedphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        #("https://alerts.weather.gov/cap/us.php?x=0", "USA", "capusphp", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.1'}),
+        ("https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://api.weather.gov/alerts/active", "USA", "nws_us", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
     ]
 
     for source_entry in source_data:

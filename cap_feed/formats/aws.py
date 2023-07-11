@@ -6,17 +6,16 @@ from cap_feed.formats.utils import convert_datetime
 
 
 
-# processing for meteoalarm format, example: https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france
-def get_alerts_meteoalarm(url, country, ns):
+# processing for aws format, example: https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml
+def get_alerts_aws(url, country, ns):
     # navigate list of alerts
     response = requests.get(url)
     root = ET.fromstring(response.content)
-    for alert_entry in root.findall('atom:entry', ns):
+    for alert_entry in root.find('channel').findall('item'):
         try:
-            # skip if alert is expired or already exists
-            expires = convert_datetime(alert_entry.find('cap:expires', ns).text)
-            id = alert_entry.find('atom:id', ns).text
-            if expires < timezone.now() or Alert.objects.filter(id=id).exists():
+            # skip if alert already exists
+            id = alert_entry.find('link').text
+            if Alert.objects.filter(id=id).exists():
                 continue
             
             # register intial alert details
@@ -34,7 +33,6 @@ def get_alerts_meteoalarm(url, country, ns):
             alert.status = alert_root.find('cap:status', ns).text
             alert.msg_type = alert_root.find('cap:msgType', ns).text
             alert.scope = alert_root.find('cap:scope', ns).text
-            alert.save()
 
             # navigate alert info
             for alert_info_entry in alert_root.findall('cap:info', ns):
@@ -50,13 +48,16 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
                 alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
                 alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
+                if alert_info.expires < timezone.now():
+                    continue
                 alert_info.sender_name = alert_info_entry.find('cap:senderName', ns).text
                 alert_info.headline = alert_info_entry.find('cap:headline', ns).text
                 alert_info.description = alert_info_entry.find('cap:description', ns).text
                 alert_info.instruction = alert_info_entry.find('cap:instruction', ns).text
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
                 alert_info.contact = alert_info_entry.find('cap:contact', ns).text
+                alert.save()
                 alert_info.save()
 
         except Exception as e:
-            print("get_alerts_meteoalarm", e)
+            print("get_alerts_aws", e)

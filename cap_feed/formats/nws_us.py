@@ -6,11 +6,12 @@ from cap_feed.formats.utils import convert_datetime
 
 
 
-# processing for meteoalarm format, example: https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france
-def get_alerts_meteoalarm(url, country, ns):
+# processing for nws_us format, example: https://api.weather.gov/alerts/active
+def get_alerts_nws_us(url, country, ns):
     # navigate list of alerts
-    response = requests.get(url)
+    response = requests.get(url, headers={'Accept': 'application/atom+xml'})
     root = ET.fromstring(response.content)
+
     for alert_entry in root.findall('atom:entry', ns):
         try:
             # skip if alert is expired or already exists
@@ -18,7 +19,7 @@ def get_alerts_meteoalarm(url, country, ns):
             id = alert_entry.find('atom:id', ns).text
             if expires < timezone.now() or Alert.objects.filter(id=id).exists():
                 continue
-            
+
             # register intial alert details
             alert = Alert()
             alert.source_feed = Source.objects.get(url=url)
@@ -26,7 +27,8 @@ def get_alerts_meteoalarm(url, country, ns):
             alert.id = id
 
             # navigate alert
-            alert_response = requests.get(alert.id)
+            cap_link = alert_entry.find('atom:link', ns).attrib['href']
+            alert_response = requests.get(cap_link)
             alert_root = ET.fromstring(alert_response.content)
             alert.identifier = alert_root.find('cap:identifier', ns).text
             alert.sender = alert_root.find('cap:sender', ns).text
@@ -34,6 +36,8 @@ def get_alerts_meteoalarm(url, country, ns):
             alert.status = alert_root.find('cap:status', ns).text
             alert.msg_type = alert_root.find('cap:msgType', ns).text
             alert.scope = alert_root.find('cap:scope', ns).text
+            alert.code = alert_root.find('cap:code', ns).text
+            if (x := root.find('cap:references', ns)) is not None: alert.references = x.text
             alert.save()
 
             # navigate alert info
@@ -47,6 +51,7 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.urgency = alert_info_entry.find('cap:urgency', ns).text
                 alert_info.severity = alert_info_entry.find('cap:severity', ns).text
                 alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
+                #alert_info.event_code
                 alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
                 alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
                 alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
@@ -55,8 +60,7 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.description = alert_info_entry.find('cap:description', ns).text
                 alert_info.instruction = alert_info_entry.find('cap:instruction', ns).text
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
-                alert_info.contact = alert_info_entry.find('cap:contact', ns).text
                 alert_info.save()
 
         except Exception as e:
-            print("get_alerts_meteoalarm", e)
+            print("get_alerts_nws_us", e)
