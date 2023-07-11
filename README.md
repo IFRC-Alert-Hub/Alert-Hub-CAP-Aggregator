@@ -1,115 +1,84 @@
-# Deploy a Python (Django) web app with PostgreSQL in Azure
+# IFRC/UCL Alert Hub - CAP Aggregator
 
-This is a Python web app using the Django framework and the Azure Database for PostgreSQL relational database service. The Django app is hosted in a fully managed Azure App Service. This app is designed to be be run locally and then deployed to Azure. You can either deploy this project by following the tutorial [*Deploy a Python (Django or Flask) web app with PostgreSQL in Azure*](https://docs.microsoft.com/azure/app-service/tutorial-python-postgresql-app) or by using the [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/overview) according to the instructions below.
+The CAP Aggregator is an alert aggregation service built for IFRC's Alert Hub. Public alerts use the Common Alerting Protocol (CAP) Version 1.2 standard.
 
-## Requirements
+This is a Python web app using the Django framework and the Azure Database for PostgreSQL relational database service. The Django app is hosted in a fully managed Azure App Service. Requests to hundreds of publicly available alert sources are managed by Celery and Redis. Aggregated alerts are then made available to the Alert Hub via a GraphQL API.
 
-The [requirements.txt](./requirements.txt) has the following packages:
+## Features
 
-| Package | Description |
-| ------- | ----------- |
-| [Django](https://pypi.org/project/Django/) | Web application framework. |
-| [pyscopg2-binary](https://pypi.org/project/psycopg-binary/) | PostgreSQL database adapter for Python. |
-| [python-dotenv](https://pypi.org/project/python-dotenv/) | Read key-value pairs from .env file and set them as environment variables. In this sample app, those variables describe how to connect to the database locally. <br><br> This package is used in the [manage.py](./manage.py) file to load environment variables. |
-| [whitenoise](https://pypi.org/project/whitenoise/) | Static file serving for WSGI applications, used in the deployed app. <br><br> This package is used in the [capaggregator/production.py](./capaggregator/production.py) file, which configures production settings. |
+**Easily manage alert sources**:
+- Change urls/polling intervals/source countries
+- Set up new sources quickly using templates to interpret xml formats
+- Identify problematic sources with feedback (WIP)
 
-## Using this project with the Azure Developer CLI (azd)
+**Get new alerts efficiently**:
+- Filtered queries using GraphQL
+- Automatic removal of expired and cancelled alerts
+- Distributed alert retrieval from sources using Redis task queues
+- Websocket communication using Django Channels (WIP)
 
-This project is designed to work well with the [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/overview),
-which makes it easier to develop apps locally, deploy them to Azure, and monitor them.
+## Table of Contents
+* Documentation
+    * <a href="#geographical-organisation">Geographical Organisation</a>
+    * <a href="#alert-aggregation-process">Alert Aggregation Process</a>
+    * <a href="#feed-facade">Feed Facade</a>
+* Development
+    * <a href="#installation-and-setup">Installation and Setup</a>
 
-### Local development
+## Geographical Organisation
+*The structure behind the handling of alerts and sources involves a clear distinction between different geographical areas.*
 
-This project has Dev Container support, so you can open it in Github Codespaces or local VS Code with the Dev Containers extension. If you're unable to open the Dev Container,
-then it's best to first [create a Python virtual environment](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments) and activate that.
+The fundamental unit of geographical area in our system is a country. Major alerting sources such as meteorological institutions are often national and therefore only report alerts under a particular country. For reference purposes, 'ISO 3166-1 alpha-3' country codes are used to distinguish between countries.
 
-1. Install the requirements:
+Each country belongs to both a region and continent. The five regions are defined according to the structure of IFRC's National Societies. Continents are defined according to the six continents system which refers to North and South America as the Americas. The primary reason for using this structure is due to organisation of countries and their metadata by the data source we used — [opendatasoft](https://public.opendatasoft.com/explore/dataset/world-administrative-boundaries/table/).
 
-    ```shell
-    python3 -m pip install -r requirements.txt
-    ```
+The allocation of countries into regions and continents is necessary for easier navigation and filtering on the IFRC Alert Hub website. The inclusion of specific countries (and territories) in our system was decided by ease of data entry and pre-processing from the opendatasoft data source. New countries can be added or removed easily by IFRC using the Feed Facade, and perhaps a new term could be used to replace 'countries' to account for the inclusion of territories and disputed states.
 
-2. Create an `.env` file using `.env.sample` as a guide. Set the value of `DBNAME` to the name of an existing database in your local PostgreSQL instance. Set the values of `DBHOST`, `DBUSER`, and `DBPASS` as appropriate for your local PostgreSQL instance. If you're in the Dev Container, copy the values from `.env.sample.devcontainer`. 
+## Alert Aggregation Process
+*Alerts are retrieved and processed before they are handed off to be displayed on the Alert Hub and alert subscription system.*
 
-3. In the `.env` file, fill in a secret value for `SECRET_KEY`. You can use this command to generate an appropriate value:
+New alert sources are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Alert sources with the same polling interval are automatically grouped into the same periodic task used by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and *Celery* workers for asynchronous background processing.
 
-    ```shell
-    python -c 'import secrets; print(secrets.token_hex())'
-    ```
+When processing the CAP feed of alerting sources, a processing template or format is used to interpret the different xml formats. For example, Meteoalarm represents a network of public weather services across Europe, and these European countries encode their cap alerts in the same xml format. The 'meteoalarm' format can therefore be selected when adding MeteoAlarm alerting sources in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
 
-4. Run the migrations: (or use VS Code "Run" button and select "Migrate")
+Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting sources make changes to their alert feed format.
 
-    ```shell
-    python3 manage.py migrate
-    ```
+The CAP-aggregator processes alerts according to the CAP-V1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting sources keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
 
-5. Run the local server: (or use VS Code "Run" button and select "Run server")
+Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP V-1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
 
-    ```shell
-    python3 manage.py runserver
-    ```
+Alerts are aggregated by countries, regions, and continents. Using filtered queries with GraphQL, the Alert Hub and other broadcasters can easily fetch only the relevant alerts, reducing unnecessary strain on the system.
 
-### Deployment
+## Feed Facade
+*Admin users can manage countries, regions, continents, sources, and each individual alert using the Feed Facade.*
 
-This repo is set up for deployment on Azure App Service (w/PostGreSQL server) using the configuration files in the `infra` folder.
+Each alerting source and their alerts belong to a country, and each country belongs to a particular region and continent. Therefore, it is necessary for regions and continents to exist first before countries can be added (although all regions and continents already exist in the system). Similarly, a new country needs be created by an admin user before a new alerting source can be added for that country.
 
-🎥 Watch a deployment of the code in [this screencast](https://www.youtube.com/watch?v=JDlZ4TgPKYc).
+Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and sources belonging to the deleted countries would also be deleted. This current behaviour is possibly unsafe and undesirable but is convenient for development. Lastly, deleting an alerting source also deletes existing alerts from the same country.
 
-Steps for deployment:
+Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter sources by format (e.g., meteoalarm) or search for sources belonging to a particular country using the search bar on the same page.
 
-1. Sign up for a [free Azure account](https://azure.microsoft.com/free/)
-2. Install the [Azure Dev CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd). (If you opened this repository in a Dev Container, that part will be done for you.)
-3. Initialize a new `azd` environment:
+A page called 'Task results' is available under the 'Celery Results' section. This shows a historical record of all the tasks for retrieving new alerts and removing expired alerts. We intend to replace this section or amend existing sections with more informative feedback about the status of each source. This would indicating possible problems to the admin such as connection issues, alert retrieval failure, and format compatibility.
 
-    ```shell
-    azd init
-    ```
+## Installation and Setup
 
-    It will prompt you to provide a name (like "django-app") that will later be used in the name of the deployed resources.
+WIP due to upcoming changes to Websockets and Django Channels. More detailed instructions will be added including our Azure deployment process (maybe useful?).
 
-4. Provision and deploy all the resources:
+### Useful Celery Commands
 
-    ```shell
-    azd up
-    ```
-
-    It will prompt you to login, pick a subscription, and provide a location (like "eastus"). Then it will provision the resources in your account and deploy the latest code. If you get an error with deployment, changing the location (like to "centralus") can help, as there may be availability constraints for some of the resources.
-
-5. When `azd` has finished deploying, you'll see an endpoint URI in the command output. Visit that URI, and you should see the front page of the restaurant review app! 🎉 If you see an error, open the Azure Portal from the URL in the command output, navigate to the App Service, select Logstream, and check the logs for any errors.
-
-    ![Screenshot of Django restaurants website](screenshot_website.png)
-
-6. If you'd like to access `/admin`, you'll need a Django superuser. Navigate to the Azure Portal for the App Service, select SSH, and run this command:
-
-    ```shell
-    python3 manage.py createsuperuser
-    ```
-
-7. When you've made any changes to the app code, you can just run:
-
-    ```shell
-    azd deploy
-    ```
-
-### CI/CD pipeline
-
-This project includes a Github workflow for deploying the resources to Azure
-on every push. That workflow requires several Azure-related authentication secrets to be stored as Github action secrets. To set that up, run:
-
-```shell
-azd pipeline config
+Inspect active workers
+```
+celery -A capaggregator inspect active
 ```
 
-### Monitoring
-
-The deployed resources include a Log Analytics workspace with an Application Insights dashboard to measure metrics like server response time.
-
-To open that dashboard, just run:
-
-```shell
-azd monitor --overview
+Start celery worker and scheduler on deployment:
+```
+celery multi start w1 -A capaggregator -l info
+celery -A capaggregator beat --detach -l info
 ```
 
-## Getting help
-
-If you're working with this project and running into issues, please post in [Issues](/issues).
+Start celery worker and sceduler for local development:
+```
+celery -A capaggregator worker -l info --pool=solo
+celery -A capaggregator beat -l info
+```

@@ -1,17 +1,18 @@
 {% load static %}
+    <h2><a href="/admin">LINK: /admin</a></h2>
+    <h2><a href="/graphql">LINK: /graphql</a></h2>
+    <hr>
 
 {% if latest_alert_list %}
     <ul>
     {% for alert in latest_alert_list %}
-        <h2>{{ alert.area_desc }}</h2>
-        <h3>{{ alert.event }}</h3>
-        <p>Certainty: {{ alert.certainty }}</p>
-        <p>Severity: {{ alert.severity }}</p>
-        <p>Urgency: {{ alert.urgency }}</p>
-        <p>Sent: {{ alert.sent }}</p>
-        <p>Sender: {{ alert.sender }}</p>
-        <p>Geocode Name: {{ alert.geocode_name }}</p>
-        <p>Geocode Value: {{ alert.geocode_value }}</p>
+        <h3>{{ alert.country }}</h3>
+        <h4>{{ alert.source_feed.url }}</h4>
+        <p>identifier: {{ alert.identifier }}</p>
+        <p>sender: {{ alert.sender }}</p>
+        <p>sent: {{ alert.sent }}</p>
+        <p>status: {{ alert.status }}</p>
+        <p>msg_type: {{ alert.msg_type }}</p>
         <br><br>
     {% endfor %}
     </ul>
