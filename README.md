@@ -1,6 +1,6 @@
 # IFRC/UCL Alert Hub - CAP Aggregator
 
-The CAP Aggregator is an alert aggregation service built for IFRC's Alert Hub. Public alerts use the Common Alerting Protocol (CAP) international standard.
+The CAP Aggregator is an alert aggregation service built for IFRC's Alert Hub. Public alerts use the Common Alerting Protocol (CAP) Version 1.2 standard.
 
 This is a Python web app using the Django framework and the Azure Database for PostgreSQL relational database service. The Django app is hosted in a fully managed Azure App Service. Requests to hundreds of publicly available alert sources are managed by Celery and Redis. Aggregated alerts are then made available to the Alert Hub via a GraphQL API.
 
@@ -37,26 +37,24 @@ The allocation of countries into regions and continents is necessary for easier 
 ## Alert Aggregation Process
 *Alerts are retrieved and processed before they are handed off to be displayed on the Alert Hub and alert subscription system.*
 
-New alert sources are added from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Alert sources with the same polling interval are automatically grouped into the same periodic task used by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and *Celery* workers for asynchronous background processing.
+New alert sources are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Alert sources with the same polling interval are automatically grouped into the same periodic task used by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and *Celery* workers for asynchronous background processing.
 
 When processing the CAP feed of alerting sources, a processing template or format is used to interpret the different xml formats. For example, Meteoalarm represents a network of public weather services across Europe, and these European countries encode their cap alerts in the same xml format. The 'meteoalarm' format can therefore be selected when adding MeteoAlarm alerting sources in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
 
-Formats are very convenient for admin users but have an inevitable drawback — they have to be created manually by developers and updated if alerting sources make changes to their CAP alerts. The number of available formats is currently limited, but we intend to greatly expand on this number as we complete other prioritised tasks such as work relating to *Django Channels*.
+Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting sources make changes to their alert feed format.
 
-CAP alerts including all kinds of metadata specific to each format is interpreted and saved to the Postgresql database. Dates and times are standardised across the system using the UTC timezone. Some alerting sources keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
+The CAP-aggregator processes alerts according to the CAP-V1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting sources keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
 
-Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database.
+Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP V-1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
 
 Alerts are aggregated by countries, regions, and continents. Using filtered queries with GraphQL, the Alert Hub and other broadcasters can easily fetch only the relevant alerts, reducing unnecessary strain on the system.
-
-> During development, we have discovered that a significant number of alerts are issued but then retracted by alerting sources before the stated expiry time. This may be a problem for alert subscriptions and we are currently discussing on our strategy for this issue.
 
 ## Feed Facade
 *Admin users can manage countries, regions, continents, sources, and each individual alert using the Feed Facade.*
 
 Each alerting source and their alerts belong to a country, and each country belongs to a particular region and continent. Therefore, it is necessary for regions and continents to exist first before countries can be added (although all regions and continents already exist in the system). Similarly, a new country needs be created by an admin user before a new alerting source can be added for that country.
 
-Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and sources belonging to the deleted countries would also be deleted. This current behaviour is possibly unsafe and undesirable but is convenient for development. This can be changed after some discussion if necessary. Lastly, deleting an alerting source also deletes existing alerts from the same country.
+Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and sources belonging to the deleted countries would also be deleted. This current behaviour is possibly unsafe and undesirable but is convenient for development. Lastly, deleting an alerting source also deletes existing alerts from the same country.
 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter sources by format (e.g., meteoalarm) or search for sources belonging to a particular country using the search bar on the same page.
 
