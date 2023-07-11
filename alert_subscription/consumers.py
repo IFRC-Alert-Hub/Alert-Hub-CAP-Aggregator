@@ -6,12 +6,14 @@ from asgiref.sync import async_to_sync
 class AlertConsumer(WebsocketConsumer):
     def connect(self):
         async_to_sync(self.channel_layer.group_add)("Alert_Transfer", self.channel_name)
+        print("Connection Established!")
         #Channel.objects.create(channel_name=self.channel_name).save()
         self.accept()
 
     def disconnect(self, close_code):
         #Channel.objects.get(channel_name=self.channel_name).delete()
         async_to_sync(self.channel_layer.group_discard)("Alert_Transfer", self.channel_name)
+        print("Connection Closed!")
         pass
 
     #TO DO: When the server receives ACK message, it deletes un-sent alert records

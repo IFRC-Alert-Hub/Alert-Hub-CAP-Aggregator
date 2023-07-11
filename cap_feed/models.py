@@ -139,7 +139,8 @@ class Alert(models.Model):
         dictionary['event'] = self.event
         dictionary['geocode_name'] = self.geocode_name
         dictionary['geocode_value'] = self.geocode_value
-        dictionary['country'] = self.country.name
+        dictionary['country_id'] = self.country.id
+        dictionary['country_name'] = self.country.name
 
         return dictionary
     
