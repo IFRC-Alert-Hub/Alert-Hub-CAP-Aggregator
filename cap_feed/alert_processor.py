@@ -5,7 +5,7 @@ import cap_feed.formats.format_handler as fh
 
 
 # gets alerts from sources and processes them different for each source format
-def poll_new_alerts():
+def poll_new_alerts(sources):
     # list of sources and configurations
     for source in Source.objects.all():
         format = source.format

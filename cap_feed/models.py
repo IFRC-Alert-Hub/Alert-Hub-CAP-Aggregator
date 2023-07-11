@@ -45,15 +45,16 @@ class Source(models.Model):
 
     FORMAT_CHOICES = [
         ('meteoalarm', 'meteoalarm'),
-        ('aws', 'aws')
+        ('aws', 'aws'),
+        ('nws_us', 'nws_us')
     ]
 
     url = models.CharField(primary_key=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
-    atom = models.CharField(max_length=255)
-    cap = models.CharField(max_length=255)
+    atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
+    cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
     
     __previous_polling_interval = None
     __previous_url = None
@@ -269,7 +270,7 @@ def add_source(source):
             )
             new_task.save()
         except Exception as e:
-            print('crashed lol ', e)
+            print('Error adding new periodic task', e)
     # If there is a task with the same interval, add the source to the task
     else:
         kwargs = json.loads(existing_task.kwargs)

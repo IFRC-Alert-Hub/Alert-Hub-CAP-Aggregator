@@ -106,10 +106,10 @@ def inject_countries():
 def inject_sources():
     # this could be converted to a fixture
     source_data = [
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
-        ("https://api.weather.gov/alerts/active", "USA", "nws_us", {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}),
+        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
+        ("https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
+        ("https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+        ("https://api.weather.gov/alerts/active", "USA", "nws_us"),
     ]
 
     for source_entry in source_data:
@@ -118,6 +118,4 @@ def inject_sources():
         source.polling_interval = 60
         source.country = Country.objects.get(iso3 = source_entry[1])
         source.format = source_entry[2]
-        source.atom = source_entry[3]['atom']
-        source.cap = source_entry[3]['cap']
         source.save()

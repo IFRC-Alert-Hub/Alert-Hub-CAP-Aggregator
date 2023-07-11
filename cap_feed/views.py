@@ -12,8 +12,8 @@ def index(request):
         dl.inject_geographical_data()
         if Source.objects.count() == 0:
             dl.inject_sources()
-        ap.poll_new_alerts()
-        #ap.remove_expired_alerts()
+        ap.remove_expired_alerts()
+        ap.poll_new_alerts([])
     except Exception as e:
         print(e)
         return HttpResponse(f"Error while injecting data {e}")

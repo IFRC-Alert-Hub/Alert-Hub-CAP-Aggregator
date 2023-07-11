@@ -61,3 +61,4 @@ def get_alerts_aws(url, country, ns):
 
         except Exception as e:
             print("get_alerts_aws", e)
+            print("id:", id)

@@ -60,3 +60,4 @@ def get_alerts_meteoalarm(url, country, ns):
 
         except Exception as e:
             print("get_alerts_meteoalarm", e)
+            print("id:", id)

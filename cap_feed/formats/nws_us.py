@@ -53,14 +53,15 @@ def get_alerts_nws_us(url, country, ns):
                 alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
                 #alert_info.event_code
                 alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
-                alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
+                if (x := alert_info_entry.find('cap:onset', ns)) is not None: alert_info.onset = convert_datetime(x.text)
                 alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
-                alert_info.sender_name = alert_info_entry.find('cap:senderName', ns).text
-                alert_info.headline = alert_info_entry.find('cap:headline', ns).text
-                alert_info.description = alert_info_entry.find('cap:description', ns).text
-                alert_info.instruction = alert_info_entry.find('cap:instruction', ns).text
+                if (x := alert_info_entry.find('cap:senderName', ns)) is not None: alert_info.sender_name = x.text
+                if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
+                if (x := alert_info_entry.find('cap:description', ns)) is not None: alert_info.description = x.text
+                if (x := alert_info_entry.find('cap:instruction', ns)) is not None: alert_info.instruction = x.text
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
                 alert_info.save()
 
         except Exception as e:
-            print("get_alerts_nws_us", e)
+            print("get_alerts_nws_us:", e)
+            print("id:", id)
