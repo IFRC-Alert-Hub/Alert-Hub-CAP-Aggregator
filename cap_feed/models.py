@@ -166,6 +166,10 @@ class AlertEncoder(json.JSONEncoder):
         return super().default(obj)
     
 class AlertInfo(models.Model):
+    # To dynamically set default expire time
+    def default_expire():
+        return timezone.now() + timedelta(days=1)
+
     CATEGORY_CHOICES = [
         ('Geo', 'Geo'),
         ('Met', 'Met'),
@@ -231,19 +235,48 @@ class AlertInfo(models.Model):
     #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
     effective = models.DateTimeField(blank=True, default=timezone.now)
     onset = models.DateTimeField(blank=True, null=True)
-    expires = models.DateTimeField(blank=True, default=(timezone.now() + timedelta(days=1)))
+    expires = models.DateTimeField(blank=True, default=default_expire)
     sender_name = models.CharField(max_length=255, blank=True, default='')
     headline = models.CharField(max_length=255, blank=True, default='')
     description = models.TextField(blank=True, default='')
     instruction = models.TextField(blank=True, default='')
     web = models.URLField(blank=True, null=True)
     contact = models.CharField(max_length=255, blank=True, default='')
-    parameter = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
-        return self.alert.id + ' ' + self.language
+        return str(self.alert) + ' ' + self.language
+    
+class AlertInfoParameter(models.Model):
+    alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
 
+    value_name = models.CharField(max_length=255)
+    value = models.TextField()
 
+class AlertInfoArea(models.Model):
+    alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
+
+    area_desc = models.TextField()
+    altitude = models.CharField(blank=True, default='')
+    ceiling = models.CharField(blank=True, default='')
+
+    def __str__(self):
+        return str(self.alert_info) + ' ' + self.area_desc
+    
+class AlertInfoAreaPolygon(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value = models.TextField()
+
+class AlertInfoAreaCircle(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value = models.TextField()
+
+class AlertInfoAreaGeocode(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value_name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
 
 # Adds source to a periodic task
 def add_source(source):

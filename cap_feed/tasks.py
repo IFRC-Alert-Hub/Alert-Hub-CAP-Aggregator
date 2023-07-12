@@ -10,5 +10,5 @@ def poll_new_alerts(self, sources):
 
 @shared_task(bind=True)
 def remove_expired_alerts(self):
-    ap.remove_expired_alerts()
-    return "remove_expired_alerts DONE"
+    removed_alerts_count = ap.remove_expired_alerts()
+    return f"removed {removed_alerts_count} alerts"

@@ -1,7 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 from django.utils import timezone
-from cap_feed.models import Alert, AlertInfo, Source
+from cap_feed.models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, Source
 from cap_feed.formats.utils import convert_datetime
 
 
@@ -57,6 +57,45 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
                 alert_info.contact = alert_info_entry.find('cap:contact', ns).text
                 alert_info.save()
+
+                # navigate alert info parameter
+                for alert_info_parameter_entry in alert_info_entry.findall('cap:parameter', ns):
+                    alert_info_parameter = AlertInfoParameter()
+                    alert_info_parameter.alert_info = alert_info
+                    alert_info_parameter.value_name = alert_info_parameter_entry.find('cap:valueName', ns).text
+                    alert_info_parameter.value = alert_info_parameter_entry.find('cap:value', ns).text
+                    alert_info_parameter.save()
+
+                # navigate alert info area
+                for alert_info_area_entry in alert_info_entry.findall('cap:area', ns):
+                    alert_info_area = AlertInfoArea()
+                    alert_info_area.alert_info = alert_info
+                    alert_info_area.area_desc = alert_info_area_entry.find('cap:areaDesc', ns).text
+                    if (x := alert_info_area_entry.find('cap:altitude', ns)) is not None: alert_info_area.altitude = x.text
+                    if (x := alert_info_area_entry.find('cap:ceiling', ns)) is not None: alert_info_area.ceiling = x.text
+                    alert_info_area.save()
+
+                    # navigate alert info area polygon
+                    for alert_info_area_polygon_entry in alert_info_area_entry.findall('cap:polygon', ns):
+                        alert_info_area_polygon = AlertInfoAreaPolygon()
+                        alert_info_area_polygon.alert_info_area = alert_info_area
+                        alert_info_area_polygon.value = alert_info_area_polygon_entry.text
+                        alert_info_area_polygon.save()
+
+                    # navigate alert info area circle
+                    for alert_info_area_circle_entry in alert_info_area_entry.findall('cap:circle', ns):
+                        alert_info_area_circle = AlertInfoAreaCircle()
+                        alert_info_area_circle.alert_info_area = alert_info_area
+                        alert_info_area_circle.value = alert_info_area_circle_entry.text
+                        alert_info_area_circle.save()
+
+                    # navigate info area geocode
+                    for alert_info_area_geocode_entry in alert_info_area_entry.findall('cap:geocode', ns):
+                        alert_info_area_geocode = AlertInfoAreaGeocode()
+                        alert_info_area_geocode.alert_info_area = alert_info_area
+                        alert_info_area_geocode.value_name = alert_info_area_geocode_entry.find('cap:valueName', ns).text
+                        alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
+                        alert_info_area_geocode.save()
 
         except Exception as e:
             print("get_alerts_meteoalarm", e)
