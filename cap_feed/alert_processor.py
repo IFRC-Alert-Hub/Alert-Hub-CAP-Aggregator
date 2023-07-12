@@ -16,4 +16,7 @@ def poll_new_alerts(sources):
 
 def remove_expired_alerts():
     AlertInfo.objects.filter(expires__lt=timezone.now()).delete()
-    Alert.objects.filter(alertinfo__isnull=True).delete()
+    expired_alerts = Alert.objects.filter(alertinfo__isnull=True)
+    expired_alerts_count = expired_alerts.count()
+    expired_alerts.delete()
+    return expired_alerts_count
