@@ -238,8 +238,8 @@ class AlertInfo(models.Model):
     expires = models.DateTimeField(blank=True, default=default_expire)
     sender_name = models.CharField(max_length=255, blank=True, default='')
     headline = models.CharField(max_length=255, blank=True, default='')
-    description = models.TextField(blank=True, default='')
-    instruction = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, null=True, default=None)
+    instruction = models.TextField(blank=True, null=True, default=None)
     web = models.URLField(blank=True, null=True)
     contact = models.CharField(max_length=255, blank=True, default='')
 
