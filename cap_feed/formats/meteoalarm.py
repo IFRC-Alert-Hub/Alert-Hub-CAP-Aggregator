@@ -55,7 +55,7 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.description = alert_info_entry.find('cap:description', ns).text
                 alert_info.instruction = alert_info_entry.find('cap:instruction', ns).text
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
-                alert_info.contact = alert_info_entry.find('cap:contact', ns).text
+                if (x := alert_info_entry.find('cap:contact', ns)) is not None: alert_info.contact = x.text
                 alert_info.save()
 
                 # navigate alert info parameter

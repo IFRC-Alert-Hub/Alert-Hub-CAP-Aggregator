@@ -59,7 +59,7 @@ def get_alerts_nws_us(url, country, ns):
                 if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
                 if (x := alert_info_entry.find('cap:description', ns)) is not None: alert_info.description = x.text
                 if (x := alert_info_entry.find('cap:instruction', ns)) is not None: alert_info.instruction = x.text
-                alert_info.web = alert_info_entry.find('cap:web', ns).text
+                if (x := alert_info_entry.find('cap:web', ns)) is not None: alert_info.web = x.text
                 alert_info.save()
 
                 # navigate alert info parameter
