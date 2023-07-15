@@ -96,7 +96,8 @@ def get_alerts_meteoalarm(url, country, ns):
                         alert_info_area_geocode.value_name = alert_info_area_geocode_entry.find('cap:valueName', ns).text
                         alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
                         alert_info_area_geocode.save()
-
+            alert.info_has_been_added()
+            alert.save()
         except Exception as e:
             print("get_alerts_meteoalarm", e)
             print("id:", id)

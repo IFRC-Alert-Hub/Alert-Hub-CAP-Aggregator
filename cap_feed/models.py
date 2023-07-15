@@ -134,28 +134,40 @@ class Alert(models.Model):
     references = models.TextField(blank=True, default='')
     incidents = models.TextField(blank=True, default='')
 
+    __all_info_added = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__all_info_added = False
     def __str__(self):
         return self.id
-    
+
+    def info_has_been_added(self):
+        self.__all_info_added = True
+
+    def all_info_are_added(self):
+        return self.__all_info_added
     # For serialization
     def to_dict(self):
         alert_dict = dict()
+        #What is the difference between id and identifier?
+        alert_dict['id'] = self.id
         alert_dict['country'] = self.country.iso3
         alert_dict['source_feed'] = self.source_feed.url
-        alert_dict['id'] = self.id
-        alert_dict['identifier'] = self.identifier
-        alert_dict['sender'] = self.sender
-        alert_dict['sent'] = str(self.sent)
-        alert_dict['status'] = self.status
-        alert_dict['msg_type'] = self.msg_type
-        alert_dict['source'] = self.source
         alert_dict['scope'] = self.scope
-        alert_dict['restriction'] = self.restriction
-        alert_dict['addresses'] = self.addresses
-        alert_dict['code'] = self.code
-        alert_dict['note'] = self.note
-        alert_dict['references'] = self.references
-        alert_dict['incidents'] = self.incidents
+
+        first_info = self.info.first()
+        if first_info != None:
+            alert_dict['urgency'] = first_info.urgency
+            alert_dict['severity'] = first_info.severity
+            alert_dict['certainty'] = first_info.certainty
+
+        info_list = []
+        for info in self.info.all():
+            info_list.append(info.to_dict())
+        alert_dict['info'] = info_list
+        print(alert_dict)
+
         return alert_dict
 
 class AlertEncoder(json.JSONEncoder):
@@ -221,7 +233,7 @@ class AlertInfo(models.Model):
         ('Unknown', 'Unknown')
     ]
 
-    alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name="info")
     
     language = models.CharField(max_length=255, blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
@@ -242,10 +254,21 @@ class AlertInfo(models.Model):
     instruction = models.TextField(blank=True, null=True, default=None)
     web = models.URLField(blank=True, null=True)
     contact = models.CharField(max_length=255, blank=True, default='')
+    parameter = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return str(self.alert) + ' ' + self.language
-    
+
+    def to_dict(self):
+        alert_info_dict = dict()
+        alert_info_dict['language'] = self.language
+        alert_info_dict['category'] = self.category
+        alert_info_dict['headline'] = self.headline
+        alert_info_dict['description'] = self.description
+        alert_info_dict['instruction'] = self.instruction
+
+        return alert_info_dict
+
 class AlertInfoParameter(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
 
@@ -261,7 +284,7 @@ class AlertInfoArea(models.Model):
 
     def __str__(self):
         return str(self.alert_info) + ' ' + self.area_desc
-    
+
 class AlertInfoAreaPolygon(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
