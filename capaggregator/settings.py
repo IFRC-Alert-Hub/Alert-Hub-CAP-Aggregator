@@ -34,7 +34,7 @@ if 'CODESPACE_NAME' in os.environ:
 # Application definition
 
 INSTALLED_APPS = [
-    #'alert_subscription.apps.AlertSubscriptionConfig',
+    'alert_subscription.apps.AlertSubscriptionConfig',
     'daphne',
     'channels',
     'django_celery_results',
@@ -177,16 +177,3 @@ CHANNEL_LAYERS = {
     },
 }
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-}
