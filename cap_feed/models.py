@@ -152,7 +152,8 @@ class Alert(models.Model):
         alert_dict = dict()
         #What is the difference between id and identifier?
         alert_dict['id'] = self.id
-        alert_dict['country'] = self.country.iso3
+        alert_dict['country_name'] = self.country.name
+        alert_dict['country_id'] = self.country.id
         alert_dict['source_feed'] = self.source_feed.url
         alert_dict['scope'] = self.scope
 
