@@ -34,6 +34,7 @@ def get_alerts_aws(url, country, ns):
             alert.msg_type = alert_root.find('cap:msgType', ns).text
             alert.scope = alert_root.find('cap:scope', ns).text
 
+            alert_has_valid_info = False
             # navigate alert info
             for alert_info_entry in alert_root.findall('cap:info', ns):
                 alert_info = AlertInfo()
@@ -58,6 +59,7 @@ def get_alerts_aws(url, country, ns):
                 alert_info.contact = alert_info_entry.find('cap:contact', ns).text
                 alert.save()
                 alert_info.save()
+                alert_has_valid_info = True
 
                 # navigate alert info parameter
                 for alert_info_parameter_entry in alert_info_entry.findall('cap:parameter', ns):
@@ -97,8 +99,9 @@ def get_alerts_aws(url, country, ns):
                         alert_info_area_geocode.value_name = alert_info_area_geocode_entry.find('cap:valueName', ns).text
                         alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
                         alert_info_area_geocode.save()
-            alert.info_has_been_added()
-            alert.save()
+            if (alert_has_valid_info):
+                alert.info_has_been_added()
+                alert.save()
         except Exception as e:
             print("get_alerts_aws", e)
             print("id:", id)

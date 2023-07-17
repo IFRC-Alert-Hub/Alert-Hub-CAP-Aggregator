@@ -37,7 +37,7 @@ application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": OriginValidator(
         AuthMiddlewareStack(URLRouter(capaggregator.routing.websocket_urlpatterns)),
-        ["wss://localhost", "wss://backend-develop.azurewebsites.net"]
+        ["wss://localhost", "wss://backend-develop.azurewebsites.net", "wss://backend-deploy.azurewebsites.net"]
     ),
 })
 

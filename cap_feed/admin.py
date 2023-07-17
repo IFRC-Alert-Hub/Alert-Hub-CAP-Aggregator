@@ -32,7 +32,7 @@ class AlertInfoInline(admin.StackedInline):
     extra = 0
 
 class AlertAdmin(admin.ModelAdmin):
-    list_display = ["id", "source_feed", "sent", "status", "message_type", "scope"]
+    list_display = ["id", "source_feed", "sent", "status", "msg_type", "scope"]
     list_filter = ["source_feed", "country"]
     search_fields = ["id"]
     fieldsets = [

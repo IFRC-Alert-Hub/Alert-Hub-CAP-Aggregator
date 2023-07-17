@@ -139,6 +139,7 @@ class Alert(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__all_info_added = False
+
     def __str__(self):
         return self.id
 
@@ -147,6 +148,7 @@ class Alert(models.Model):
 
     def all_info_are_added(self):
         return self.__all_info_added
+    
     # For serialization
     def to_dict(self):
         alert_dict = dict()
