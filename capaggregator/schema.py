@@ -1,16 +1,37 @@
 import graphene
 from graphene_django import DjangoObjectType
-from cap_feed.models import Continent, Region, Country, Alert, AlertInfo
+from cap_feed.models import Continent, Region, Country, Alert, AlertInfo, AlertInfoArea, AlertInfoAreaCircle, AlertInfoAreaPolygon, AlertInfoAreaGeocode
 
 
+
+class AlertInfoAreaGeocodeType(DjangoObjectType):
+    class Meta:
+        model = AlertInfoAreaGeocode
+
+class AlertInfoAreaPolygonType(DjangoObjectType):
+    class Meta:
+        model = AlertInfoAreaPolygon
+
+class AlertInfoAreaCircleType(DjangoObjectType):
+    class Meta:
+        model = AlertInfoAreaCircle
+
+class AlertInfoAreaType(DjangoObjectType):
+    class Meta:
+        model = AlertInfoArea
 
 class AlertInfoType(DjangoObjectType):
     class Meta:
         model = AlertInfo
 
 class AlertType(DjangoObjectType):
+    alertinfoSet = graphene.List(AlertInfoType)
     class Meta:
         model = Alert
+        fields = ('id', 'source_feed', 'sent', 'status', 'msg_type', 'scope', 'country', 'info')
+
+    def resolve_alertinfoSet(self, info):
+        return self.info.all()
 
 class ContinentType(DjangoObjectType):
     class Meta:

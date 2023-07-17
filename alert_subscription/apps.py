@@ -15,5 +15,5 @@ class AlertSubscriptionConfig(AppConfig):
 def send_alert(sender, instance, created, *args, **kwargs):
     from .views import send_alert_to_channel
     if instance.all_info_are_added():
-        print(instance.info)
+        #print(instance.info)
         send_alert_to_channel(instance)
