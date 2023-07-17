@@ -47,7 +47,7 @@ class CountryAdmin(admin.ModelAdmin):
     search_fields = ["name", "iso3"]
 
 class SourceAdmin(admin.ModelAdmin):
-    list_display = ["url", "country", "format", "polling_interval"]
+    list_display = ["name", "country", "url", "format", "polling_interval"]
     list_filter = ["format", "polling_interval"]
     search_fields = ["url", "country"]
 
