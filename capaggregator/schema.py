@@ -28,7 +28,7 @@ class AlertType(DjangoObjectType):
     alertinfoSet = graphene.List(AlertInfoType)
     class Meta:
         model = Alert
-        fields = ('id', 'source_feed', 'sent', 'status', 'msg_type', 'scope', 'country', 'info')
+        fields = ('id', 'source_feed', 'country', 'identifier', 'sender', 'sent', 'status', 'msg_type', 'source', 'scope', 'restriction', 'addresses', 'code', 'note', 'references', 'incidents', 'info')
 
     def resolve_alertinfoSet(self, info):
         return self.info.all()
