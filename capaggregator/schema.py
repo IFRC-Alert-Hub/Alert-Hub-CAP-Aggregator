@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-from cap_feed.models import Continent, Region, Country, Alert, AlertInfo, AlertInfoArea, AlertInfoAreaCircle, AlertInfoAreaPolygon, AlertInfoAreaGeocode
+from cap_feed.models import Continent, Region, Country, Alert, AlertInfo, AlertInfoArea, AlertInfoAreaCircle, AlertInfoAreaPolygon, AlertInfoAreaGeocode, Source
 
 
 
@@ -45,6 +45,11 @@ class CountryType(DjangoObjectType):
     class Meta:
         model = Country
 
+class SourceType(DjangoObjectType):
+    class Meta:
+        model = Source
+        fields = ('name', 'country', 'url')
+
 
 class Query(graphene.ObjectType):
     list_alert=graphene.List(AlertType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
@@ -52,6 +57,7 @@ class Query(graphene.ObjectType):
     list_continent=graphene.List(ContinentType)
     list_country=graphene.List(CountryType, region_id=graphene.String(), continent_id=graphene.String())
     list_region=graphene.List(RegionType)
+    list_source=graphene.List(SourceType)
 
     def resolve_list_alert(root, info, iso3=None, region_id=None, continent_id=None, **kwargs):
         filter = dict()
@@ -95,5 +101,8 @@ class Query(graphene.ObjectType):
     
     def resolve_list_region(root, info):
         return Region.objects.all()
+    
+    def resolve_list_source(root, info):
+        return Source.objects.all()
 
 schema = graphene.Schema(query=Query)

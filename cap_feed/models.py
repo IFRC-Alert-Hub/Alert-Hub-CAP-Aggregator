@@ -48,7 +48,7 @@ class Source(models.Model):
         ('aws', 'aws'),
         ('nws_us', 'nws_us')
     ]
-
+    name = models.CharField(max_length=255)
     url = models.CharField(primary_key=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
@@ -78,6 +78,7 @@ class Source(models.Model):
     # For serialization
     def to_dict(self):
         source_dict = dict()
+        source_dict['name'] = self.name
         source_dict['url'] = self.url
         source_dict['country'] = self.country.iso3
         source_dict['format'] = self.format

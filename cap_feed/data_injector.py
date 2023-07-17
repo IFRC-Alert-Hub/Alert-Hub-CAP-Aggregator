@@ -106,16 +106,19 @@ def inject_countries():
 def inject_sources():
     # this could be converted to a fixture
     source_data = [
-        ("https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
-        ("https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
-        ("https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
-        ("https://api.weather.gov/alerts/active", "USA", "nws_us"),
+        ("Meteo-France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
+        ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
+        ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+        ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
     ]
+
+    print('hi')
 
     for source_entry in source_data:
         source = Source()
-        source.url = source_entry[0]
+        source.name = source_entry[0]
+        source.url = source_entry[1]
         source.polling_interval = 60
-        source.country = Country.objects.get(iso3 = source_entry[1])
-        source.format = source_entry[2]
+        source.country = Country.objects.get(iso3 = source_entry[2])
+        source.format = source_entry[3]
         source.save()
