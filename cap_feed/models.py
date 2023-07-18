@@ -149,9 +149,38 @@ class Alert(models.Model):
 
     def all_info_are_added(self):
         return self.__all_info_added
-    
-    # For serialization
+
+    # This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
+        alert_dict = dict()
+        alert_dict['id'] = self.id
+        alert_dict['identifier'] = self.identifier
+        alert_dict['sender'] = self.sender
+        alert_dict['sent'] = self.sent
+        alert_dict['status'] = self.status
+        alert_dict['msg_type'] = self.msg_type
+        alert_dict['source'] = self.source
+        alert_dict['scope'] = self.scope
+        alert_dict['restriction'] = self.restriction
+        alert_dict['addresses'] = self.addresses
+        alert_dict['code'] = self.code
+        alert_dict['note'] = self.note
+        alert_dict['references'] = self.references
+        alert_dict['incidents'] = self.incidents
+        alert_dict['source_url'] = self.source_feed.url
+        alert_dict['source_format'] = self.source_feed.format
+        alert_dict['country'] = self.country.name
+        alert_dict['iso3'] = self.country.iso3
+
+        info_list = []
+        for info in self.info.all():
+            info_list.append(info.to_dict())
+        alert_dict['info'] = info_list
+        print(alert_dict)
+        return
+
+    # This method will be used for serialization of alert object to be transferred by websocket.
+    def alert_to_be_transferred_to_dict(self):
         alert_dict = dict()
         #What is the difference between id and identifier?
         alert_dict['id'] = self.id
@@ -168,16 +197,16 @@ class Alert(models.Model):
 
         info_list = []
         for info in self.info.all():
-            info_list.append(info.to_dict())
+            info_list.append(info.alert_info_to_be_transferred_to_dict())
         alert_dict['info'] = info_list
         print(alert_dict)
 
         return alert_dict
 
-class AlertEncoder(json.JSONEncoder):
+class AlertTransferEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Alert):
-            return obj.to_dict()
+            return obj.alert_to_be_transferred_to_dict()
 
         return super().default(obj)
     
@@ -267,10 +296,33 @@ class AlertInfo(models.Model):
         alert_info_dict = dict()
         alert_info_dict['language'] = self.language
         alert_info_dict['category'] = self.category
+        alert_info_dict['event'] = self.event
+        alert_info_dict['response_type'] = self.response_type
+        alert_info_dict['urgency'] = self.urgency
+        alert_info_dict['severity'] = self.severity
+        alert_info_dict['certainty'] = self.certainty
+        alert_info_dict['audience'] = self.audience
+        alert_info_dict['event_code'] = self.event_code
+        alert_info_dict['effective'] = self.effective
+        alert_info_dict['onset'] = self.onset
+        alert_info_dict['expires'] = self.expires
+        alert_info_dict['sender_name'] = self.sender_name
         alert_info_dict['headline'] = self.headline
         alert_info_dict['description'] = self.description
         alert_info_dict['instruction'] = self.instruction
+        alert_info_dict['web'] = self.web
+        alert_info_dict['contact'] = self.contact
+        alert_info_dict['parameter'] = self.parameter
+        return alert_info_dict
 
+
+    def alert_info_to_be_transferred_to_dict(self):
+        alert_info_dict = dict()
+        alert_info_dict['language'] = self.language
+        alert_info_dict['category'] = self.category
+        alert_info_dict['headline'] = self.headline
+        alert_info_dict['description'] = self.description
+        alert_info_dict['instruction'] = self.instruction
         return alert_info_dict
 
 class AlertInfoParameter(models.Model):
