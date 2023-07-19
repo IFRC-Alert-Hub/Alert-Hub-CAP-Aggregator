@@ -176,8 +176,7 @@ class Alert(models.Model):
         for info in self.info.all():
             info_list.append(info.to_dict())
         alert_dict['info'] = info_list
-        print(alert_dict)
-        return
+        return alert_dict
 
     # This method will be used for serialization of alert object to be transferred by websocket.
     def alert_to_be_transferred_to_dict(self):
@@ -202,6 +201,14 @@ class Alert(models.Model):
         print(alert_dict)
 
         return alert_dict
+
+class AlertCacheEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Alert):
+            return obj.to_dict()
+
+        return super().default(obj)
+
 
 class AlertTransferEncoder(json.JSONEncoder):
     def default(self, obj):
