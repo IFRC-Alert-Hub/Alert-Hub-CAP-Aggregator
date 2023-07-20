@@ -2,6 +2,7 @@ import cap_feed.data_injector as dl
 from django.http import HttpResponse
 from django.template import loader
 from .models import Alert, Source
+from django.shortcuts import render
 import cap_feed.alert_cache as ac
 import cap_feed.alert_processor as ap
 
@@ -34,3 +35,10 @@ def cache_all_alert(request):
 def get_cached_data(request):
     ac.return_all_cached_alerts()
     return HttpResponse("Good Work!")
+
+def dynamic_view(request):
+    context = {
+        'dynamic_data': ac.return_all_cached_alerts(),
+    }
+    template = loader.get_template("cap_feed/rebroadcaster.html")
+    return HttpResponse(template.render(context, request))
