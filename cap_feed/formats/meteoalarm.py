@@ -43,7 +43,7 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.language = alert_info_entry.find('cap:language', ns).text
                 alert_info.category = alert_info_entry.find('cap:category', ns).text
                 alert_info.event = alert_info_entry.find('cap:event', ns).text
-                if (x := alert_info.find('cap:responseType', ns)) is not None: alert_info.response_type = x.text
+                if (x := alert_info_entry.find('cap:responseType', ns)) is not None: alert_info.response_type = x.text
                 alert_info.urgency = alert_info_entry.find('cap:urgency', ns).text
                 alert_info.severity = alert_info_entry.find('cap:severity', ns).text
                 alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
