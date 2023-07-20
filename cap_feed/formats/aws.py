@@ -47,7 +47,7 @@ def get_alerts_aws(url, country, ns):
                 alert_info.severity = alert_info_entry.find('cap:severity', ns).text
                 alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
                 alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
-                alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
+                if (x := alert_info_entry.find('cap:onset', ns)) is not None: alert_info.onset = convert_datetime(x.text)
                 alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
                 if alert_info.expires < timezone.now():
                     continue
