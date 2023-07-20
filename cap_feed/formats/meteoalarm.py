@@ -51,7 +51,7 @@ def get_alerts_meteoalarm(url, country, ns):
                 alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
                 alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
                 alert_info.sender_name = alert_info_entry.find('cap:senderName', ns).text
-                alert_info.headline = alert_info_entry.find('cap:headline', ns).text
+                if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
                 alert_info.description = alert_info_entry.find('cap:description', ns).text
                 alert_info.instruction = alert_info_entry.find('cap:instruction', ns).text
                 alert_info.web = alert_info_entry.find('cap:web', ns).text
