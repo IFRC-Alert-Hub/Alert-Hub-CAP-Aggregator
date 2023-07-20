@@ -27,7 +27,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 # WHITENOISE_USE_FINDERS = True
 # WHITENOISE_MANIFEST_STRICT = False
 # WHITENOISE_ALLOW_ALL_ORIGINS = True
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Configure Postgres database based on connection string of the libpq Keyword/Value form
 # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
