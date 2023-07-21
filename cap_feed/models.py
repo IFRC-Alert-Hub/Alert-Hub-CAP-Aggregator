@@ -150,8 +150,36 @@ class Alert(models.Model):
     def all_info_are_added(self):
         return self.__all_info_added
     
-    # For serialization
+# This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
+        alert_dict = dict()
+        alert_dict['id'] = self.id
+        alert_dict['identifier'] = self.identifier
+        alert_dict['sender'] = self.sender
+        alert_dict['sent'] = self.sent
+        alert_dict['status'] = self.status
+        alert_dict['msg_type'] = self.msg_type
+        alert_dict['source'] = self.source
+        alert_dict['scope'] = self.scope
+        alert_dict['restriction'] = self.restriction
+        alert_dict['addresses'] = self.addresses
+        alert_dict['code'] = self.code
+        alert_dict['note'] = self.note
+        alert_dict['references'] = self.references
+        alert_dict['incidents'] = self.incidents
+        alert_dict['source_url'] = self.source_feed.url
+        alert_dict['source_format'] = self.source_feed.format
+        alert_dict['country'] = self.country.name
+        alert_dict['iso3'] = self.country.iso3
+
+        info_list = []
+        for info in self.info.all():
+            info_list.append(info.to_dict())
+        alert_dict['info'] = info_list
+        return alert_dict
+
+    # This method will be used for serialization of alert object to be transferred by websocket.
+    def alert_to_be_transferred_to_dict(self):
         alert_dict = dict()
         #What is the difference between id and identifier?
         alert_dict['id'] = self.id
@@ -168,16 +196,23 @@ class Alert(models.Model):
 
         info_list = []
         for info in self.info.all():
-            info_list.append(info.to_dict())
+            info_list.append(info.alert_info_to_be_transferred_to_dict())
         alert_dict['info'] = info_list
         print(alert_dict)
 
         return alert_dict
-
-class AlertEncoder(json.JSONEncoder):
+    
+class AlertCacheEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Alert):
             return obj.to_dict()
+
+        return super().default(obj)
+
+class AlertTransferEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Alert):
+            return obj.alert_to_be_transferred_to_dict()
 
         return super().default(obj)
     
@@ -267,10 +302,46 @@ class AlertInfo(models.Model):
         alert_info_dict = dict()
         alert_info_dict['language'] = self.language
         alert_info_dict['category'] = self.category
+        alert_info_dict['event'] = self.event
+        alert_info_dict['response_type'] = self.response_type
+        alert_info_dict['urgency'] = self.urgency
+        alert_info_dict['severity'] = self.severity
+        alert_info_dict['certainty'] = self.certainty
+        alert_info_dict['audience'] = self.audience
+        alert_info_dict['event_code'] = self.event_code
+        alert_info_dict['effective'] = self.effective
+        alert_info_dict['onset'] = self.onset
+        alert_info_dict['expires'] = self.expires
+        alert_info_dict['sender_name'] = self.sender_name
         alert_info_dict['headline'] = self.headline
         alert_info_dict['description'] = self.description
         alert_info_dict['instruction'] = self.instruction
+        alert_info_dict['web'] = self.web
+        alert_info_dict['contact'] = self.contact
 
+        parameter_set = self.alertinfoparameter_set.all()
+        parameter_list = []
+        for parameter in parameter_set:
+            parameter_list.append(parameter.to_dict())
+        if len(parameter_list) != 0:
+            alert_info_dict['parameter'] = parameter_list
+
+        area_set = self.alertinfoarea_set.all()
+        area_list = []
+        for area in area_set:
+            area_list.append(area.to_dict())
+        if len(area_list) != 0:
+            alert_info_dict['area'] = area_list
+
+        return alert_info_dict
+    
+    def alert_info_to_be_transferred_to_dict(self):
+        alert_info_dict = dict()
+        alert_info_dict['language'] = self.language
+        alert_info_dict['category'] = self.category
+        alert_info_dict['headline'] = self.headline
+        alert_info_dict['description'] = self.description
+        alert_info_dict['instruction'] = self.instruction
         return alert_info_dict
 
 class AlertInfoParameter(models.Model):
@@ -278,6 +349,12 @@ class AlertInfoParameter(models.Model):
 
     value_name = models.CharField(max_length=255)
     value = models.TextField()
+
+    def to_dict(self):
+        alert_info_parameter_dict = dict()
+        alert_info_parameter_dict['value_name'] = self.value_name
+        alert_info_parameter_dict['value'] = self.value
+        return alert_info_parameter_dict
 
 class AlertInfoArea(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
@@ -288,22 +365,68 @@ class AlertInfoArea(models.Model):
 
     def __str__(self):
         return str(self.alert_info) + ' ' + self.area_desc
+    
+    def to_dict(self):
+        alert_info_area_dict = dict()
+        alert_info_area_dict['area_desc'] = self.area_desc
+        alert_info_area_dict['altitude'] = self.altitude
+        alert_info_area_dict['ceiling'] = self.ceiling
+
+        area_polygon_set = self.alertinfoareapolygon_set.all()
+        area_polygon_list = []
+        for area_polygon in area_polygon_set:
+            area_polygon_list.append(area_polygon.to_dict())
+        if len(area_polygon_list) != 0:
+            alert_info_area_dict['polygon'] = area_polygon_list
+
+        area_circle_set = self.alertinfoareacircle_set.all()
+        area_circle_list = []
+        for area_circle in area_circle_set:
+            area_circle_list.append(area_circle.to_dict())
+        if len(area_circle_list) != 0:
+            alert_info_area_dict['circle'] = area_circle_list
+
+        area_geocode_set = self.alertinfoareageocode_set.all()
+        area_geocode_list = []
+        for area_geocode in area_geocode_set:
+            area_geocode_list.append(area_geocode.to_dict())
+        if len(area_geocode_list) != 0:
+            alert_info_area_dict['geocode'] = area_geocode_list
+
+        return alert_info_area_dict
 
 class AlertInfoAreaPolygon(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
     value = models.TextField()
 
+    def to_dict(self):
+        alert_info_area_ploygon_dict = dict()
+        alert_info_area_ploygon_dict['value'] = self.value
+        return alert_info_area_ploygon_dict
+
 class AlertInfoAreaCircle(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
     value = models.TextField()
+
+    def to_dict(self):
+        alert_info_area_circle_dict = dict()
+        alert_info_area_circle_dict['value'] = self.value
+        return alert_info_area_circle_dict
+
 
 class AlertInfoAreaGeocode(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
     value_name = models.CharField(max_length=255)
     value = models.CharField(max_length=255)
+
+    def to_dict(self):
+        alert_info_area_geocode_dict = dict()
+        alert_info_area_geocode_dict['value_name'] = self.value_name
+        alert_info_area_geocode_dict['value'] = self.value
+        return alert_info_area_geocode_dict
 
 # Adds source to a periodic task
 def add_source(source):
