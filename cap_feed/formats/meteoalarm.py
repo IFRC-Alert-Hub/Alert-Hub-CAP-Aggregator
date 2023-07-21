@@ -40,21 +40,24 @@ def get_alerts_meteoalarm(url, country, ns):
             for alert_info_entry in alert_root.findall('cap:info', ns):
                 alert_info = AlertInfo()
                 alert_info.alert = alert
-                alert_info.language = alert_info_entry.find('cap:language', ns).text
+                if (x := alert_info_entry.find('cap:language', ns)) is not None: alert_info.language = x.text
                 alert_info.category = alert_info_entry.find('cap:category', ns).text
                 alert_info.event = alert_info_entry.find('cap:event', ns).text
                 if (x := alert_info_entry.find('cap:responseType', ns)) is not None: alert_info.response_type = x.text
                 alert_info.urgency = alert_info_entry.find('cap:urgency', ns).text
                 alert_info.severity = alert_info_entry.find('cap:severity', ns).text
                 alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
+                if (x := alert_info_entry.find('cap:audience', ns)) is not None: alert_info.audience = x.text
                 alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
-                alert_info.onset = convert_datetime(alert_info_entry.find('cap:onset', ns).text)
-                alert_info.expires = convert_datetime(alert_info_entry.find('cap:expires', ns).text)
-                alert_info.sender_name = alert_info_entry.find('cap:senderName', ns).text
+                if (x := alert_info_entry.find('cap:onset', ns)) is not None: alert_info.onset = convert_datetime(x.text)
+                if (x := alert_info_entry.find('cap:expires', ns)) is not None: alert_info.expires = convert_datetime(x.text)
+                if alert_info.expires < timezone.now():
+                    continue
+                if (x := alert_info_entry.find('cap:senderName', ns)) is not None: alert_info.sender_name = x.text
                 if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
-                alert_info.description = alert_info_entry.find('cap:description', ns).text
+                if (x := alert_info_entry.find('cap:description', ns)) is not None: alert_info.description = x.text
                 if (x := alert_info_entry.find('cap:instruction', ns)) is not None: alert_info.instruction = x.text
-                alert_info.web = alert_info_entry.find('cap:web', ns).text
+                if (x := alert_info_entry.find('cap:web', ns)) is not None: alert_info.web = x.text
                 if (x := alert_info_entry.find('cap:contact', ns)) is not None: alert_info.contact = x.text
                 alert_info.save()
 
