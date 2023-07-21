@@ -1,6 +1,12 @@
 <!-- Cached template for static content -->
 {% load cache %}
 
-{% cache 300 my_static_cache_key %}
-    <!-- Your static template content here -->
+{% cache None static_alert_key %}
+    {{ alert_list_json }}
 {% endcache %}
+
+<!-- Add the dynamic content -->
+<div>
+
+    {{ dynamic_data }}
+</div>

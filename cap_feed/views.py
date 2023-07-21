@@ -38,7 +38,8 @@ def get_cached_data(request):
 
 def dynamic_view(request):
     context = {
-        'dynamic_data': ac.return_all_cached_alerts(),
+        'static_alert': Alert.objects.all(),
+        'dynamic_alert': ac.return_all_cached_alerts(),
     }
     template = loader.get_template("cap_feed/rebroadcaster.html")
     return HttpResponse(template.render(context, request))
