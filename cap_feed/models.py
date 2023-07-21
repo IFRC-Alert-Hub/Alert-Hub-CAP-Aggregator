@@ -46,7 +46,8 @@ class Source(models.Model):
     FORMAT_CHOICES = [
         ('meteoalarm', 'meteoalarm'),
         ('aws', 'aws'),
-        ('nws_us', 'nws_us')
+        ('nws_us', 'nws_us'),
+        ('meteo_ru', 'meteo_ru')
     ]
     name = models.CharField(max_length=255)
     url = models.CharField(primary_key=True, max_length=255)
