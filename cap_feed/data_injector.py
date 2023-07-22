@@ -116,7 +116,8 @@ def inject_sources():
         ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
         ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
         ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
-        ("United States National Weather Service", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
+        ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
+        ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
     ]
 
     for source_entry in source_data:
