@@ -75,25 +75,6 @@ class Source(models.Model):
         else:
             update_source(self, self.__previous_url, self.__previous_polling_interval)
         super(Source, self).save(force_insert, force_update, *args, **kwargs)
-
-    # For serialization
-    def to_dict(self):
-        source_dict = dict()
-        source_dict['name'] = self.name
-        source_dict['url'] = self.url
-        source_dict['country'] = self.country.iso3
-        source_dict['format'] = self.format
-        source_dict['polling_interval'] = self.polling_interval
-        source_dict['atom'] = self.atom
-        source_dict['cap'] = self.cap
-        return source_dict
-
-class SourceEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Source):
-            return obj.to_dict()
-
-        return super().default(obj)
     
 class Alert(models.Model):
     STATUS_CHOICES = [
@@ -199,7 +180,6 @@ class Alert(models.Model):
         for info in self.info.all():
             info_list.append(info.alert_info_to_be_transferred_to_dict())
         alert_dict['info'] = info_list
-        print(alert_dict)
 
         return alert_dict
     
@@ -429,6 +409,7 @@ class AlertInfoAreaGeocode(models.Model):
         alert_info_area_geocode_dict['value'] = self.value
         return alert_info_area_geocode_dict
 
+
 # Adds source to a periodic task
 def add_source(source):
     interval = source.polling_interval
@@ -450,7 +431,7 @@ def add_source(source):
                 name = 'poll_new_alerts_' + str(interval) + '_seconds',
                 task = 'cap_feed.tasks.poll_new_alerts',
                 start_time = timezone.now(),
-                kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
+                kwargs = json.dumps({"sources": [source.url]}),
             )
             new_task.save()
         except Exception as e:
@@ -458,8 +439,8 @@ def add_source(source):
     # If there is a task with the same interval, add the source to the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        kwargs["sources"].append(source)
-        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
+        kwargs["sources"].append(source.url)
+        existing_task.kwargs = json.dumps(kwargs)
         existing_task.save()
 
 # Removes source from a periodic task
@@ -473,14 +454,11 @@ def remove_source(source):
     # If there is a task with the same interval, remove the source from the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        for kwarg_source in kwargs["sources"]:
-            if kwarg_source['url'] == source.url:
-                source_to_remove = kwarg_source
-                break
-        kwargs["sources"].remove(source_to_remove)
-        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
+        if source.url in kwargs["sources"]:
+            kwargs["sources"].remove(source.url)
+        existing_task.kwargs = json.dumps(kwargs)
         existing_task.save()
-        if kwargs == {"sources": []}:
+        if not kwargs["sources"]:
             existing_task.delete()
 
 def update_source(source, previous_url, previous_interval):

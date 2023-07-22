@@ -1,7 +1,7 @@
 import pytz
 from datetime import datetime
 from cap_feed.formats.utils import convert_datetime
-from cap_feed import alert_processor as ap
+import cap_feed.tasks as tasks
 
 from django.test import TestCase
 from django.utils import timezone
@@ -77,7 +77,7 @@ class AlertModelTests(TestCase):
 
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
-        ap.remove_expired_alerts()
+        tasks.remove_expired_alerts()
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
 
@@ -114,6 +114,6 @@ class AlertModelTests(TestCase):
 
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
-        ap.remove_expired_alerts()
+        tasks.remove_expired_alerts()
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count

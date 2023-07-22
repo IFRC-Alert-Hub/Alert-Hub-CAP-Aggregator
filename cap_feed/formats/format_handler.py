@@ -5,15 +5,19 @@ from .meteo_ru import get_alerts_meteo_ru
 
 
 
-def get_alerts(format, url, country, ns):
-    match format:
+def get_alerts(source):
+    polled_alerts_count = 0
+    
+    match source.format:
         case "meteoalarm":
-            get_alerts_meteoalarm(url, country, ns)
+            polled_alerts_count = get_alerts_meteoalarm(source)
         case "aws":
-            get_alerts_aws(url, country, ns)
+            polled_alerts_count = get_alerts_aws(source)
         case "nws_us":
-            get_alerts_nws_us(url, country, ns)
+            polled_alerts_count = get_alerts_nws_us(source)
         case "meteo_ru":
-            get_alerts_meteo_ru(url, country, ns)
+            polled_alerts_count = get_alerts_meteo_ru(source)
         case _:
             print("Format not supported")
+
+    return polled_alerts_count
