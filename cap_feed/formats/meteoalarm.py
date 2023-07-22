@@ -13,7 +13,12 @@ def get_alerts_meteoalarm(source):
     polled_alerts_count = 0
 
     # navigate list of alerts
-    response = requests.get(source.url)
+    try:
+        response = requests.get(source.url)
+    except requests.exceptions.RequestException as e:
+        print("Exception: ", source.format, source.url, e)
+        print("It is likely that the connection to this source is unstable.")
+        return polled_alerts_count
     root = ET.fromstring(response.content)
     ns = {'atom': source.atom, 'cap': source.cap}
     for alert_entry in root.findall('atom:entry', ns):
