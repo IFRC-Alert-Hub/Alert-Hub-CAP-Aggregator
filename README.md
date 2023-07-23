@@ -15,7 +15,7 @@ This is a Python web app using the Django framework and the Azure Database for P
 - Filtered queries using GraphQL
 - Automatic removal of expired and cancelled alerts
 - Distributed alert retrieval from sources using Redis task queues
-- Websocket communication using Django Channels (WIP)
+- Websocket communication using Django Channels
 
 ## Table of Contents
 * Documentation
