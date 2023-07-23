@@ -24,5 +24,5 @@ class AlertConsumer(WebsocketConsumer):
 
     def alert_transfer(self, event):
         alert = event['text']
-        print(f'Received alert: {alert}')
+        #print(f'Received alert: {alert}')
         self.send(text_data=json.dumps({"message": json.loads(alert)}))

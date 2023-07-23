@@ -131,8 +131,8 @@ class Alert(models.Model):
 
     def all_info_are_added(self):
         return self.__all_info_added
-    
-# This method will be used for serialization of alert object to be cached into Redis.
+
+    # This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
         alert_dict = dict()
         alert_dict['id'] = self.id
@@ -182,13 +182,14 @@ class Alert(models.Model):
         alert_dict['info'] = info_list
 
         return alert_dict
-    
+
 class AlertCacheEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Alert):
             return obj.to_dict()
 
         return super().default(obj)
+
 
 class AlertTransferEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -315,7 +316,8 @@ class AlertInfo(models.Model):
             alert_info_dict['area'] = area_list
 
         return alert_info_dict
-    
+
+
     def alert_info_to_be_transferred_to_dict(self):
         alert_info_dict = dict()
         alert_info_dict['language'] = self.language
@@ -337,6 +339,8 @@ class AlertInfoParameter(models.Model):
         alert_info_parameter_dict['value'] = self.value
         return alert_info_parameter_dict
 
+
+
 class AlertInfoArea(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
 
@@ -346,7 +350,7 @@ class AlertInfoArea(models.Model):
 
     def __str__(self):
         return str(self.alert_info) + ' ' + self.area_desc
-    
+
     def to_dict(self):
         alert_info_area_dict = dict()
         alert_info_area_dict['area_desc'] = self.area_desc
@@ -397,6 +401,7 @@ class AlertInfoAreaCircle(models.Model):
         return alert_info_area_circle_dict
 
 
+
 class AlertInfoAreaGeocode(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
@@ -408,7 +413,6 @@ class AlertInfoAreaGeocode(models.Model):
         alert_info_area_geocode_dict['value_name'] = self.value_name
         alert_info_area_geocode_dict['value'] = self.value
         return alert_info_area_geocode_dict
-
 
 # Adds source to a periodic task
 def add_source(source):
