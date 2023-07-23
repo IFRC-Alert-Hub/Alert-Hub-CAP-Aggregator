@@ -5,8 +5,6 @@ from cap_feed.formats.utils import convert_datetime
 
 
 def get_alert(id, alert_root, source, ns):
-    polled_alerts_count = 0
-
     # register alert
     alert = Alert()
     alert.source_feed = source
@@ -54,7 +52,6 @@ def get_alert(id, alert_root, source, ns):
         alert_info.save()
         alert_has_valid_info = True
 
-
         # navigate alert info parameter
         for alert_info_parameter_entry in alert_info_entry.findall('cap:parameter', ns):
             alert_info_parameter = AlertInfoParameter()
@@ -97,6 +94,6 @@ def get_alert(id, alert_root, source, ns):
     if (alert_has_valid_info):
         alert.info_has_been_added()
         alert.save()
-        polled_alerts_count += 1
+        return alert.identifier, True
 
-    return polled_alerts_count
+    return alert.identifier, False

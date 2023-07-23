@@ -10,15 +10,17 @@ from cap_feed.formats.utils import convert_datetime
 
 # processing for nws_us format, example: https://api.weather.gov/alerts/active
 def get_alerts_nws_us(source):
+    identifiers = set()
     polled_alerts_count = 0
 
     # navigate list of alerts
     try:
         response = requests.get(source.url, headers={'Accept': 'application/atom+xml'})
     except requests.exceptions.RequestException as e:
-        print("Exception: ", source.format, source.url, e)
+        print(f"Exception from source: {source.url}")
         print("It is likely that the connection to this source is unstable.")
-        return polled_alerts_count
+        print(e)
+        return identifiers, polled_alerts_count
     root = ET.fromstring(response.content)
     ns = {'atom': source.atom, 'cap': source.cap}
     for alert_entry in root.findall('atom:entry', ns):
@@ -33,10 +35,13 @@ def get_alerts_nws_us(source):
             cap_link = alert_entry.find('atom:link', ns).attrib['href']
             alert_response = requests.get(cap_link)
             alert_root = ET.fromstring(alert_response.content)
-            polled_alerts_count += get_alert(id, alert_root, source, ns)
-
+            identifier, polled_alert_count = get_alert(id, alert_root, source, ns)
+            identifiers.add(identifier)
+            polled_alerts_count += polled_alert_count
+        
         except Exception as e:
-            print("Exception: ", source.format, source.url, e)
-            print("id:", id)
+            print(f"Exception from source: {source.url}")
+            print(f"Alert id: {id}")
+            print(e)
 
-    return polled_alerts_count
+    return identifiers, polled_alerts_count
