@@ -138,7 +138,7 @@ class Alert(models.Model):
         alert_dict['id'] = self.id
         alert_dict['identifier'] = self.identifier
         alert_dict['sender'] = self.sender
-        alert_dict['sent'] = self.sent
+        alert_dict['sent'] = str(self.sent)
         alert_dict['status'] = self.status
         alert_dict['msg_type'] = self.msg_type
         alert_dict['source'] = self.source
@@ -291,9 +291,9 @@ class AlertInfo(models.Model):
         alert_info_dict['certainty'] = self.certainty
         alert_info_dict['audience'] = self.audience
         alert_info_dict['event_code'] = self.event_code
-        alert_info_dict['effective'] = self.effective
-        alert_info_dict['onset'] = self.onset
-        alert_info_dict['expires'] = self.expires
+        alert_info_dict['effective'] = str(self.effective)
+        alert_info_dict['onset'] = str(self.onset)
+        alert_info_dict['expires'] = str(self.expires)
         alert_info_dict['sender_name'] = self.sender_name
         alert_info_dict['headline'] = self.headline
         alert_info_dict['description'] = self.description
