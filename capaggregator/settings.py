@@ -158,7 +158,6 @@ task_serializer = 'json'
 result_backend = 'django-db'
 cache_backend = 'django-cache'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-CELERY_broker_connection_retry_on_startup = True
 
 ASGI_APPLICATION = "capaggregator.asgi.application"
 
