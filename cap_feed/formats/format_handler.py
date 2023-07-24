@@ -6,33 +6,40 @@ from .meteo_ru import get_alerts_meteo_ru
 
 
 
-def get_alerts(source, identifiers):
-    # track existing alerts
-    existing_alerts = set()
-    existing_alerts.update(Alert.objects.filter(source=source).values_list('identifier', flat=True))
+def get_alerts(source, alert_urls):
     # track new alerts
-    new_identifiers = set()
+    new_alert_urls = set()
     # track number of alerts polled
     polled_alerts_count = 0
+    # track if poll was valid
+    valid_poll = False
+
+    
+    print(f'Source: {source}')
+    print(f'Alerts in system: {Alert.objects.filter(source_feed=source).count()}')
+    
     try:
         match source.format:
             case "meteoalarm":
-                new_identifiers, polled_alerts_count, valid_poll = get_alerts_meteoalarm(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteoalarm(source)
             case "aws":
-                new_identifiers, polled_alerts_count, valid_poll = get_alerts_aws(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_aws(source)
             case "nws_us":
-                new_identifiers, polled_alerts_count, valid_poll = get_alerts_nws_us(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_nws_us(source)
             case "meteo_ru":
-                new_identifiers, polled_alerts_count, valid_poll = get_alerts_meteo_ru(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteo_ru(source)
             case _:
                 print("Format not supported")
-                new_identifiers, polled_alerts_count, valid_poll = set(), 0, True
+                new_alert_urls, polled_alerts_count, valid_poll = set(), 0, True
     except Exception as e:
         print(f"Error getting alerts from {source.url}: {e}")
 
     if valid_poll:
-        identifiers.update(new_identifiers)
+        alert_urls.update(new_alert_urls)
+        print(f'Valid alerts in feed: {len(alert_urls)}')
         # delete alerts that are no longer active
-        Alert.objects.filter(source_feed=source).exclude(identifier__in=identifiers).delete()
+        deleted_alerts = Alert.objects.filter(source_feed=source).exclude(id__in=alert_urls)
+        print(f'Alerts deleted: {deleted_alerts.count()}')
+        deleted_alerts.delete()
 
     return polled_alerts_count

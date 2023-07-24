@@ -96,7 +96,7 @@ def get_alert(id, alert_root, source, ns):
         if (alert_has_valid_info):
             alert.info_has_been_added()
             alert.save()
-            return alert.identifier, True
+            return alert.id, True
     
     except IntegrityError as e:
         print(f"IntegrityError from source: {source.url}")
@@ -109,4 +109,4 @@ def get_alert(id, alert_root, source, ns):
         print("It is likely that this CAP alert violates CAP-v1.2 schema by not providing necessary xml elements.")
         print(e)
 
-    return alert.identifier, False
+    return alert.id, False

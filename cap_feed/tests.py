@@ -15,12 +15,12 @@ from cap_feed.formats.format_handler import get_alerts
 class AlertModelTests(TestCase):
     fixtures = ['cap_feed/fixtures/test_data.json']
 
-    def create_alert(self, identifier="", days=1):
+    def create_alert(self, id="", days=1):
         alert = Alert()
         alert.country = Country.objects.get(pk=1)
         alert.source_feed = Source.objects.get(url="test_source")
-        alert.id = ""
-        alert.identifier = identifier
+        alert.id = id
+        alert.identifier = ""
         alert.sender = ""
         alert.sent = timezone.now()
         alert.status = 'Actual'
@@ -104,7 +104,7 @@ class AlertModelTests(TestCase):
         """
         Is an existing active alert removed from the database when it is deleted from the source feed?
         """
-        self.create_alert(identifier='test_identifier', days=1)
+        self.create_alert(id='test_id', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
@@ -116,10 +116,10 @@ class AlertModelTests(TestCase):
         """
         Is an existing active alert kept in the database when it persists in the source feed?
         """
-        self.create_alert(identifier='test_identifier', days=1)
+        self.create_alert(id='test_id', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
-            get_alerts(Source.objects.get(url="test_source"), {'test_identifier'})
+            get_alerts(Source.objects.get(url="test_source"), {'test_id'})
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
