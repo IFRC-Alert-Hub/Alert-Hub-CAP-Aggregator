@@ -31,12 +31,10 @@
     {
       "model": "cap_feed.source",
       "fields": {
-        "url": "",
+        "url": "test_source",
         "country": 1,
-        "format": "meteoalarm",
-        "polling_interval": 10,
-        "atom": "",
-        "cap": ""
+        "format": "test_format",
+        "polling_interval": 10
       }
     }
   ]
