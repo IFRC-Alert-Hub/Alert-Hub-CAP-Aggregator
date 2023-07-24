@@ -6,28 +6,26 @@ from .meteo_ru import get_alerts_meteo_ru
 
 
 
-def get_alerts(source):
+def get_alerts(source, identifiers):
     # track existing alerts
     existing_alerts = set()
     existing_alerts.update(Alert.objects.filter(source=source).values_list('identifier', flat=True))
-    # track number of new alerts
-    polled_alerts_count = 0
-    # track new alerts
-    identifiers = set()
     
     match source.format:
         case "meteoalarm":
-            identifiers, polled_alerts_count = get_alerts_meteoalarm(source)
+            new_identifiers, polled_alerts_count = get_alerts_meteoalarm(source)
         case "aws":
-            identifiers, polled_alerts_count = get_alerts_aws(source)
+            new_identifiers, polled_alerts_count = get_alerts_aws(source)
         case "nws_us":
-            identifiers, polled_alerts_count = get_alerts_nws_us(source)
+            new_identifiers, polled_alerts_count = get_alerts_nws_us(source)
         case "meteo_ru":
-            identifiers, polled_alerts_count = get_alerts_meteo_ru(source)
+            new_identifiers, polled_alerts_count = get_alerts_meteo_ru(source)
         case _:
             print("Format not supported")
-
+            new_identifiers, polled_alerts_count = set(), 0
+    
+    identifiers.update(new_identifiers)
     # delete alerts that are no longer active
-    Alert.objects.filter(source=source).exclude(identifier__in=identifiers).delete()
+    Alert.objects.filter(source_feed=source).exclude(identifier__in=identifiers).delete()
 
     return polled_alerts_count
