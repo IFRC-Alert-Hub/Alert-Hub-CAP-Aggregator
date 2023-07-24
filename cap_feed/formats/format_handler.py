@@ -13,19 +13,20 @@ def get_alerts(source, identifiers):
     
     match source.format:
         case "meteoalarm":
-            new_identifiers, polled_alerts_count = get_alerts_meteoalarm(source)
+            new_identifiers, polled_alerts_count, valid_poll = get_alerts_meteoalarm(source)
         case "aws":
-            new_identifiers, polled_alerts_count = get_alerts_aws(source)
+            new_identifiers, polled_alerts_count, valid_poll = get_alerts_aws(source)
         case "nws_us":
-            new_identifiers, polled_alerts_count = get_alerts_nws_us(source)
+            new_identifiers, polled_alerts_count, valid_poll = get_alerts_nws_us(source)
         case "meteo_ru":
-            new_identifiers, polled_alerts_count = get_alerts_meteo_ru(source)
+            new_identifiers, polled_alerts_count, valid_poll = get_alerts_meteo_ru(source)
         case _:
             print("Format not supported")
-            new_identifiers, polled_alerts_count = set(), 0
+            new_identifiers, polled_alerts_count, valid_poll = set(), 0, True
     
-    identifiers.update(new_identifiers)
-    # delete alerts that are no longer active
-    Alert.objects.filter(source_feed=source).exclude(identifier__in=identifiers).delete()
+    if valid_poll:
+        identifiers.update(new_identifiers)
+        # delete alerts that are no longer active
+        Alert.objects.filter(source_feed=source).exclude(identifier__in=identifiers).delete()
 
     return polled_alerts_count

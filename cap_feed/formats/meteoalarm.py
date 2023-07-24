@@ -12,6 +12,7 @@ from cap_feed.formats.utils import convert_datetime
 def get_alerts_meteoalarm(source):
     identifiers = set()
     polled_alerts_count = 0
+    valid_poll = True
 
     # navigate list of alerts
     try:
@@ -20,7 +21,8 @@ def get_alerts_meteoalarm(source):
         print(f"RequestException from source: {source.url}")
         print("It is likely that the connection to this source is unstable.")
         print(e)
-        return identifiers, polled_alerts_count
+        valid_poll = False
+        return identifiers, polled_alerts_count, valid_poll
     root = ET.fromstring(response.content)
     ns = {'atom': source.atom, 'cap': source.cap}
     for alert_entry in root.findall('atom:entry', ns):
@@ -35,11 +37,13 @@ def get_alerts_meteoalarm(source):
             print(f"RequestException from source: {source.url}")
             print("It is likely that the connection to this source is unstable.")
             print(e)
+            valid_poll = False
         except AttributeError as e:
             print(f"AttributeError from source: {source.url}")
             print(f"Alert id: {id}")
             print("It is likely that the source format has changed and needs to be updated.")
             print(e)
+            valid_poll = False
         else:
             # navigate alert
             alert_root = ET.fromstring(alert_response.content)
@@ -47,4 +51,4 @@ def get_alerts_meteoalarm(source):
             identifiers.add(identifier)
             polled_alerts_count += polled_alert_count
 
-    return identifiers, polled_alerts_count
+    return identifiers, polled_alerts_count, valid_poll
