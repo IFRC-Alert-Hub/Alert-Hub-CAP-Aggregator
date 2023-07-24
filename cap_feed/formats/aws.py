@@ -15,7 +15,7 @@ def get_alerts_aws(source):
     try:
         response = requests.get(source.url)
     except requests.exceptions.RequestException as e:
-        print(f"Exception from source: {source.url}")
+        print(f"RequestException from source: {source.url}")
         print("It is likely that the connection to this source is unstable.")
         print(e)
         return identifiers, polled_alerts_count
@@ -27,17 +27,21 @@ def get_alerts_aws(source):
             id = alert_entry.find('link').text
             if Alert.objects.filter(id=id).exists():
                 continue
-
-            # navigate alert
             alert_response = requests.get(id)
+        except requests.exceptions.RequestException as e:
+            print(f"RequestException from source: {source.url}")
+            print("It is likely that the connection to this source is unstable.")
+            print(e)
+        except AttributeError as e:
+            print(f"AttributeError from source: {source.url}")
+            print(f"Alert id: {id}")
+            print("It is likely that the source format has changed and needs to be updated.")
+            print(e)
+        else:
+            # navigate alert
             alert_root = ET.fromstring(alert_response.content)
             identifier, polled_alert_count = get_alert(id, alert_root, source, ns)
             identifiers.add(identifier)
             polled_alerts_count += polled_alert_count
-        
-        except Exception as e:
-            print(f"Exception from source: {source.url}")
-            print(f"Alert id: {id}")
-            print(e)
 
     return identifiers, polled_alerts_count
