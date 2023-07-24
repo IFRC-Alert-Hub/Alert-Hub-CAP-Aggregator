@@ -26,10 +26,10 @@ def index(request):
     }
     return HttpResponse(template.render(context, request))
 
-def reset_cached_fragment(request):
-    ac.reset_cached_fragment()
+def reset_template(request):
+    ac.reset_template()
     return HttpResponse("Done")
 
-def dynamic_view(request):
-    context = {"static_alerts" : ac.get_all_cached_alerts()}
+def get_alerts(request):
+    context = {"static_alerts" : ac.get_static_alerts(), "dynamic_alerts": ac.get_dynamic_alerts()}
     return HttpResponse(render(request, 'cap_feed/rebroadcaster.html', context))
