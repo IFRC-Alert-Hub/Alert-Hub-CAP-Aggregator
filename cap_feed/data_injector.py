@@ -118,6 +118,7 @@ def inject_sources():
         ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
         ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
         ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
+        ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
     ]
 
     for source_entry in source_data:

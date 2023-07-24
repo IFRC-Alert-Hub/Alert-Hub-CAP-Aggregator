@@ -13,8 +13,8 @@ def poll_new_alerts(self, sources):
     for url in sources:
         source = Source.objects.get(url=url)
         # additional persisting alerts to not be deleted
-        identifiers = set()
-        polled_alerts_count += fh.get_alerts(source, identifiers)
+        alert_urls = set()
+        polled_alerts_count += fh.get_alerts(source, alert_urls)
     return f"polled {polled_alerts_count} alerts"
 
 @shared_task(bind=True)
