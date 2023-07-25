@@ -1,10 +1,8 @@
 <!-- Cached template for static content -->
 {% load cache %}
 
-{% cache 200 static_alerts_key %}
-    <pre> {{ static_alerts }} </pre>
+{% cache 2000 static_alerts_key %}
+    <pre>{{ static_alerts }}</pre>
 {% endcache %}
-
-<div>
-    <pre>{{ dynamic_data }}<pre>
-</div>
+{% comment %} <!---> {% endcomment %}
+<pre>{{ dynamic_alerts }}</pre>

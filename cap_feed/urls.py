@@ -4,6 +4,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('reset_cached_fragment', views.reset_template, name='reset_cached_fragment'),
+    path('reset_template', views.reset_template, name='reset_template'),
     path('get_alerts', views.get_alerts, name='dynamic_view'),
 ]
