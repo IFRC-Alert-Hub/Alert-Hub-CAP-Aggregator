@@ -52,9 +52,8 @@ def get_alerts_nws_us(source):
             # navigate alert
             alert_root = ET.fromstring(alert_response.content)
             alert_url, polled_alert_count = get_alert(id, alert_root, source, ns)
-            alert_urls.add(alert_url)
             polled_alerts_count += polled_alert_count
-            if not polled_alert_count:
-                valid_poll = False
+            if polled_alert_count:
+                alert_urls.add(alert_url)
 
     return alert_urls, polled_alerts_count, valid_poll

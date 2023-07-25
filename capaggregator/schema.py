@@ -55,7 +55,7 @@ class Query(graphene.ObjectType):
     list_alert=graphene.List(AlertType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
     list_alert_info=graphene.List(AlertInfoType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
     list_continent=graphene.List(ContinentType)
-    list_country=graphene.List(CountryType, region_id=graphene.String(), continent_id=graphene.String())
+    list_country=graphene.List(CountryType, iso3=graphene.String(), region_id=graphene.String(), continent_id=graphene.String())
     list_region=graphene.List(RegionType)
     list_source=graphene.List(SourceType)
 
@@ -88,8 +88,10 @@ class Query(graphene.ObjectType):
     def resolve_list_continent(root, info):
         return Continent.objects.all()
     
-    def resolve_list_country(root, info, region_id=None, continent_id=None, **kwargs):
+    def resolve_list_country(root, info, iso3=None, region_id=None, continent_id=None, **kwargs):
         filter = dict()
+        if iso3:
+            filter['iso3'] = iso3
         if region_id:
             filter['region__id'] = region_id
         if continent_id:
