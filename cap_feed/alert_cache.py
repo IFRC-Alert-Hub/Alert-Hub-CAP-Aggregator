@@ -15,8 +15,8 @@ def cache_static_alerts():
     static_alerts_in_json = json.dumps(static_alerts_dictionary, indent=4)
     if len(alerts_list) > 0:
         static_alerts_in_json = static_alerts_in_json[0:-2] + ","
-    cache.set("static_alerts", static_alerts_in_json, timeout=200)
-    cache.set("static_alerts_have_been_cached", True, timeout=200)
+    cache.set("static_alerts", static_alerts_in_json, timeout=None)
+    cache.set("static_alerts_have_been_cached", True, timeout=None)
 
 def get_static_alerts():
     if cache.get("static_alerts_have_been_cached") == None:
