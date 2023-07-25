@@ -153,6 +153,7 @@ class Alert(models.Model):
         alert_dict['source_format'] = self.source_feed.format
         alert_dict['country'] = self.country.name
         alert_dict['iso3'] = self.country.iso3
+        alert_dict['country_polygon'] = self.country.polygon
 
         info_list = []
         for info in self.info.all():
