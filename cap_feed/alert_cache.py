@@ -8,12 +8,8 @@ import time
 #Cache alerts in a very intuitive way without any optimisation
 def cache_static_alerts():
     alerts_list = []
-    i = 0
     for alert in Alert.objects.all():
-        if i > 1:
-            continue
         alerts_list.append(alert.to_dict())
-        i += 1
     static_alerts_dictionary = {"static_alerts:": alerts_list}
     # Convert the dictionary to a JSON-formatted string
     static_alerts_in_json = json.dumps(static_alerts_dictionary, indent=4)
