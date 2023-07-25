@@ -5,12 +5,12 @@ from cap_feed.formats.utils import convert_datetime
 
 
 
-def get_alert(id, alert_root, source, ns):
+def get_alert(id, alert_root, feed, ns):
     try:
         # register alert
         alert = Alert()
-        alert.source_feed = source
-        alert.country = source.country
+        alert.feed = feed
+        alert.country = feed.country
         alert.id = id
         alert.identifier = alert_root.find('cap:identifier', ns).text
         alert.sender = alert_root.find('cap:sender', ns).text
@@ -99,12 +99,12 @@ def get_alert(id, alert_root, source, ns):
             return alert.id, True
     
     except IntegrityError as e:
-        print(f"IntegrityError from source: {source.url}")
+        print(f"IntegrityError from feed: {feed.url}")
         print(f"Alert id: {id}")
         print("It is likely that this CAP alert violates CAP-v1.2 schema by not providing required values.")
         print(e)
     except AttributeError as e:
-        print(f"AttributeError from source: {source.url}")
+        print(f"AttributeError from feed: {feed.url}")
         print(f"Alert id: {id}")
         print("It is likely that this CAP alert violates CAP-v1.2 schema by not providing necessary xml elements.")
         print(e)

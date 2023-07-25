@@ -1,15 +1,12 @@
+import json
+from datetime import timedelta
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-import json
-import time
-from datetime import timedelta
-
-
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from django_celery_beat.models import PeriodicTask
 
-# Create your models here.
+
 
 class Continent(models.Model):
     name = models.CharField(max_length=255)
@@ -37,7 +34,7 @@ class Country(models.Model):
     def __str__(self):
         return self.iso3 + ' ' + self.name
 
-class Source(models.Model):
+class Feed(models.Model):
     INTERVAL_CHOICES = []
     # [10, 45, 60, 75, 90, 105, 120]
     for interval in range(10, 130, 10):
@@ -61,7 +58,7 @@ class Source(models.Model):
     __previous_url = None
 
     def __init__(self, *args, **kwargs):
-        super(Source, self).__init__(*args, **kwargs)
+        super(Feed, self).__init__(*args, **kwargs)
         self.__previous_polling_interval = self.polling_interval
         self.__previous_url = self.url
 
@@ -71,10 +68,10 @@ class Source(models.Model):
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
-            add_source(self)
+            add_feed(self)
         else:
-            update_source(self, self.__previous_url, self.__previous_polling_interval)
-        super(Source, self).save(force_insert, force_update, *args, **kwargs)
+            update_feed(self, self.__previous_url, self.__previous_polling_interval)
+        super(Feed, self).save(force_insert, force_update, *args, **kwargs)
     
 class Alert(models.Model):
     STATUS_CHOICES = [
@@ -100,7 +97,7 @@ class Alert(models.Model):
     ]
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    source_feed = models.ForeignKey(Source, on_delete=models.CASCADE)
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     id = models.CharField(primary_key=True, max_length=255)
 
     identifier = models.CharField(max_length=255)
@@ -149,8 +146,8 @@ class Alert(models.Model):
         alert_dict['note'] = self.note
         alert_dict['references'] = self.references
         alert_dict['incidents'] = self.incidents
-        alert_dict['source_url'] = self.source_feed.url
-        alert_dict['source_format'] = self.source_feed.format
+        alert_dict['feed_url'] = self.feed.url
+        alert_dict['feed_format'] = self.feed.format
         alert_dict['country'] = self.country.name
         alert_dict['iso3'] = self.country.iso3
 
@@ -167,7 +164,7 @@ class Alert(models.Model):
         alert_dict['id'] = self.id
         alert_dict['country_name'] = self.country.name
         alert_dict['country_id'] = self.country.id
-        alert_dict['source_feed'] = self.source_feed.url
+        alert_dict['feed_url'] = self.feed.url
         alert_dict['scope'] = self.scope
 
         first_info = self.info.first()
@@ -400,8 +397,6 @@ class AlertInfoAreaCircle(models.Model):
         alert_info_area_circle_dict['value'] = self.value
         return alert_info_area_circle_dict
 
-
-
 class AlertInfoAreaGeocode(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
@@ -413,10 +408,10 @@ class AlertInfoAreaGeocode(models.Model):
         alert_info_area_geocode_dict['value_name'] = self.value_name
         alert_info_area_geocode_dict['value'] = self.value
         return alert_info_area_geocode_dict
-
-# Adds source to a periodic task
-def add_source(source):
-    interval = source.polling_interval
+    
+# Adds feed to a periodic task
+def add_feed(feed):
+    interval = feed.polling_interval
     interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
     if interval_schedule is None:
         interval_schedule = IntervalSchedule.objects.create(every=interval, period='seconds')
@@ -435,45 +430,45 @@ def add_source(source):
                 name = 'poll_new_alerts_' + str(interval) + '_seconds',
                 task = 'cap_feed.tasks.poll_new_alerts',
                 start_time = timezone.now(),
-                kwargs = json.dumps({"sources": [source.url]}),
+                kwargs = json.dumps({"feeds": [feed.url]}),
             )
             new_task.save()
         except Exception as e:
             print('Error adding new periodic task', e)
-    # If there is a task with the same interval, add the source to the task
+    # If there is a task with the same interval, add the feed to the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        kwargs["sources"].append(source.url)
+        kwargs["feeds"].append(feed.url)
         existing_task.kwargs = json.dumps(kwargs)
         existing_task.save()
 
-# Removes source from a periodic task
-def remove_source(source):
-    interval = source.polling_interval
+# Removes feed from a periodic task
+def remove_feed(feed):
+    interval = feed.polling_interval
     interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
     existing_task = PeriodicTask.objects.filter(interval=interval_schedule, task="cap_feed.tasks.poll_new_alerts").first()
     # If there is no task with the same interval, thats a problem
     if existing_task is None:
         print("There is no periodic task with the same interval")
-    # If there is a task with the same interval, remove the source from the task
+    # If there is a task with the same interval, remove the feed from the task
     else:
         kwargs = json.loads(existing_task.kwargs)
-        if source.url in kwargs["sources"]:
-            kwargs["sources"].remove(source.url)
+        if feed.url in kwargs["feeds"]:
+            kwargs["feeds"].remove(feed.url)
         existing_task.kwargs = json.dumps(kwargs)
         existing_task.save()
-        if not kwargs["sources"]:
+        if not kwargs["feeds"]:
             existing_task.delete()
 
-def update_source(source, previous_url, previous_interval):
-    # Remove the source with old configurations
-    new_url = source.url
-    new_interval = source.polling_interval
-    source.url = previous_url
-    source.polling_interval = previous_interval
+def update_feed(feed, previous_url, previous_interval):
+    # Remove the feed with old configurations
+    new_url = feed.url
+    new_interval = feed.polling_interval
+    feed.url = previous_url
+    feed.polling_interval = previous_interval
     # Remove entry from database
-    source.delete()
-    # Add the updated source again
-    source.url = new_url
-    source.polling_interval = new_interval
-    add_source(source)
+    feed.delete()
+    # Add the updated feed again
+    feed.url = new_url
+    feed.polling_interval = new_interval
+    add_feed(feed)

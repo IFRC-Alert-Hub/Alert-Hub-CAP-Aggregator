@@ -6,7 +6,7 @@ from .meteo_ru import get_alerts_meteo_ru
 
 
 
-def get_alerts(source, alert_urls):
+def get_alerts(feed, alert_urls):
     # track new alerts
     new_alert_urls = set()
     # track number of alerts polled
@@ -15,30 +15,30 @@ def get_alerts(source, alert_urls):
     valid_poll = False
 
     
-    print(f'Source: {source}')
-    print(f'Alerts in system: {Alert.objects.filter(source_feed=source).count()}')
+    print(f'Feed: {feed}')
+    print(f'Alerts in system: {Alert.objects.filter(feed=feed).count()}')
     
     try:
-        match source.format:
+        match feed.format:
             case "meteoalarm":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteoalarm(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteoalarm(feed)
             case "aws":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_aws(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_aws(feed)
             case "nws_us":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_nws_us(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_nws_us(feed)
             case "meteo_ru":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteo_ru(source)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteo_ru(feed)
             case _:
                 print("Format not supported")
                 new_alert_urls, polled_alerts_count, valid_poll = set(), 0, True
     except Exception as e:
-        print(f"Error getting alerts from {source.url}: {e}")
+        print(f"Error getting alerts from {feed.url}: {e}")
 
     if valid_poll:
         alert_urls.update(new_alert_urls)
         print(f'Valid alerts in feed: {len(alert_urls)}')
         # delete alerts that are no longer active
-        deleted_alerts = Alert.objects.filter(source_feed=source).exclude(id__in=alert_urls)
+        deleted_alerts = Alert.objects.filter(feed=feed).exclude(id__in=alert_urls)
         print(f'Alerts deleted: {deleted_alerts.count()}')
         deleted_alerts.delete()
 

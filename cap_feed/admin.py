@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, Source
+from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, Feed
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule
 from django_celery_results.models import GroupResult
 
@@ -20,7 +20,7 @@ class AlertInfoAreaAdmin(admin.ModelAdmin):
 
 class AlertInfoAdmin(admin.ModelAdmin):
     list_display = ["alert", "language"]
-    list_filter = ["alert__source_feed", "alert__country"]
+    list_filter = ["alert__feed", "alert__country"]
     search_fields = ["alert__id"]
     fieldsets = [
         ("Administration", {"fields": ["alert"]}),
@@ -32,11 +32,11 @@ class AlertInfoInline(admin.StackedInline):
     extra = 0
 
 class AlertAdmin(admin.ModelAdmin):
-    list_display = ["id", "source_feed", "sent", "status", "msg_type", "scope"]
-    list_filter = ["source_feed", "country"]
+    list_display = ["id", "feed", "sent", "status", "msg_type", "scope"]
+    list_filter = ["feed", "country"]
     search_fields = ["id"]
     fieldsets = [
-        ("Administration", {"fields": ["country", "source_feed"]}),
+        ("Administration", {"fields": ["country", "feed"]}),
         ("Alert Header" , {"fields": ["identifier", "sender", "sent", "status", "msg_type", "source", "scope", "restriction", "addresses", "code", "note", "references", "incidents"]}),
     ]
     inlines = [AlertInfoInline]
@@ -46,7 +46,7 @@ class CountryAdmin(admin.ModelAdmin):
     list_filter = ["region", "continent"]
     search_fields = ["name", "iso3"]
 
-class SourceAdmin(admin.ModelAdmin):
+class FeedAdmin(admin.ModelAdmin):
     list_display = ["name", "country", "url", "format", "polling_interval"]
     list_filter = ["format", "polling_interval"]
     search_fields = ["url", "country"]
@@ -63,7 +63,7 @@ admin.site.register(Alert, AlertAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
-admin.site.register(Source, SourceAdmin)
+admin.site.register(Feed, FeedAdmin)
 
 admin.site.unregister(GroupResult)
 admin.site.unregister(CrontabSchedule)

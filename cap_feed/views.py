@@ -1,7 +1,7 @@
 import cap_feed.data_injector as dl
 from django.http import HttpResponse
 from django.template import loader
-from .models import Alert, Source
+from .models import Alert, Feed
 
 import cap_feed.alert_cache as ac
 
@@ -10,8 +10,8 @@ import cap_feed.alert_cache as ac
 def index(request):
     try:
         dl.inject_geographical_data()
-        if Source.objects.count() == 0:
-            dl.inject_sources()
+        if Feed.objects.count() == 0:
+            dl.inject_feeds()
     except Exception as e:
         print(e)
         return HttpResponse(f"Error while injecting data {e}")

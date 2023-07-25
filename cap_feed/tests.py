@@ -5,7 +5,7 @@ from io import StringIO
 from django.test import TestCase
 from django.utils import timezone
 
-from .models import Alert, AlertInfo, Country, Source
+from .models import Alert, AlertInfo, Country, Feed
 import cap_feed.tasks as tasks
 from cap_feed.formats.utils import convert_datetime
 from cap_feed.formats.format_handler import get_alerts
@@ -18,7 +18,7 @@ class AlertModelTests(TestCase):
     def create_alert(self, id="", days=1):
         alert = Alert()
         alert.country = Country.objects.get(pk=1)
-        alert.source_feed = Source.objects.get(url="test_source")
+        alert.feed = Feed.objects.get(url="test_feed")
         alert.id = id
         alert.identifier = ""
         alert.sender = ""
@@ -45,7 +45,7 @@ class AlertModelTests(TestCase):
 
         return alert, alert_info
 
-    def test_alert_source_datetime_converted_to_utc(self):
+    def test_feed_datetime_converted_to_utc(self):
         """
         Is the iso format cap alert datetime field with timezone offsets processed correctly to utc timezone?
         """
@@ -102,24 +102,24 @@ class AlertModelTests(TestCase):
 
     def test_deleted_alert_is_removed(self):
         """
-        Is an existing active alert removed from the database when it is deleted from the source feed?
+        Is an existing active alert removed from the database when it is deleted from the feed?
         """
         self.create_alert(id='test_id', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
-            get_alerts(Source.objects.get(url="test_source"), set())
+            get_alerts(Feed.objects.get(url="test_feed"), set())
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
 
     def test_persisting_alert_is_kept(self):
         """
-        Is an existing active alert kept in the database when it persists in the source feed?
+        Is an existing active alert kept in the database when it persists in the feed?
         """
         self.create_alert(id='test_id', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
-            get_alerts(Source.objects.get(url="test_source"), {'test_id'})
+            get_alerts(Feed.objects.get(url="test_feed"), {'test_id'})
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
