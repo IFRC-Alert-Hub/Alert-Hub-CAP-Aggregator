@@ -38,7 +38,7 @@ def get_alerts(feed, alert_urls):
         alert_urls.update(new_alert_urls)
         #print(f'Valid alerts in feed: {len(alert_urls)}')
         # delete alerts that are no longer active
-        deleted_alerts = Alert.objects.filter(feed=feed).exclude(id__in=alert_urls)
+        deleted_alerts = Alert.objects.filter(feed=feed).exclude(url__in=alert_urls)
         #print(f'Alerts deleted: {deleted_alerts.count()}')
         deleted_alerts.delete()
 

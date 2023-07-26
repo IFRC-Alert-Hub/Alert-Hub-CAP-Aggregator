@@ -21,7 +21,7 @@ class AlertInfoAreaAdmin(admin.ModelAdmin):
 class AlertInfoAdmin(admin.ModelAdmin):
     list_display = ["alert", "language"]
     list_filter = ["alert__feed", "alert__country"]
-    search_fields = ["alert__id"]
+    search_fields = ["alert__url"]
     fieldsets = [
         ("Administration", {"fields": ["alert"]}),
         ("Alert Info" , {"fields": ["language", "category", "event", "response_type", "urgency", "severity", "certainty", "audience", "event_code", "effective", "onset", "expires", "sender_name", "headline", "description", "instruction", "web", "contact"]}),
@@ -32,9 +32,9 @@ class AlertInfoInline(admin.StackedInline):
     extra = 0
 
 class AlertAdmin(admin.ModelAdmin):
-    list_display = ["id", "country", "feed", "sent", "status", "msg_type", "scope"]
+    list_display = ["url", "country", "feed", "sent", "status", "msg_type", "scope"]
     list_filter = ["feed", "country"]
-    search_fields = ["id"]
+    search_fields = ["url"]
     fieldsets = [
         ("Administration", {"fields": ["country", "feed"]}),
         ("Alert Header" , {"fields": ["identifier", "sender", "sent", "status", "msg_type", "source", "scope", "restriction", "addresses", "code", "note", "references", "incidents"]}),
@@ -52,9 +52,13 @@ class FeedAdmin(admin.ModelAdmin):
     search_fields = ["url", "country"]
 
 class FeedLogAdmin(admin.ModelAdmin):
-    list_display = ["exception", "feed", "description", "alert_id", "error_message", "timestamp"]
+    list_display = ["exception", "feed", "description", "alert_url", "timestamp"]
     list_filter = ["feed"]
-    search_fields = ["feed", "exception", "alert_id"]
+    search_fields = ["feed", "exception", "alert_url"]
+    fieldsets = [
+        ("Log Context", {"fields": ["feed", "alert_url", "timestamp", "notes"]}),
+        ("Log Details" , {"fields": ["exception", "error_message", "description", "response"]}),
+    ]
 
 
 

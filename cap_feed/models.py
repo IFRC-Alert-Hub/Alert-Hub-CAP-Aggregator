@@ -53,6 +53,7 @@ class Feed(models.Model):
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
     atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
     cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
+    notes = models.TextField(blank=True, default='')
     
     __previous_polling_interval = None
     __previous_url = None
@@ -98,7 +99,7 @@ class Alert(models.Model):
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
-    id = models.CharField(primary_key=True, max_length=255)
+    url = models.CharField(max_length=255, unique=True)
 
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
@@ -121,7 +122,7 @@ class Alert(models.Model):
         self.__all_info_added = False
 
     def __str__(self):
-        return self.id
+        return self.url
 
     def info_has_been_added(self):
         self.__all_info_added = True
@@ -132,7 +133,7 @@ class Alert(models.Model):
     # This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
         alert_dict = dict()
-        alert_dict['id'] = self.id
+        alert_dict['url'] = self.url
         alert_dict['identifier'] = self.identifier
         #alert_dict['sender'] = self.sender
         #alert_dict['sent'] = str(self.sent)
@@ -162,7 +163,7 @@ class Alert(models.Model):
     def alert_to_be_transferred_to_dict(self):
         alert_dict = dict()
         #What is the difference between id and identifier?
-        alert_dict['id'] = self.id
+        alert_dict['url'] = self.url
         alert_dict['country_name'] = self.country.name
         alert_dict['country_id'] = self.country.id
         alert_dict['feed_url'] = self.feed.url
@@ -416,15 +417,17 @@ class FeedLog(models.Model):
     error_message = models.TextField(default='')
     description = models.TextField(default='')
     response = models.TextField(default='')
-    alert_id = models.CharField(max_length=255, blank=True, default='')
+    alert_url = models.CharField(max_length=255, blank=True, default='')
     timestamp = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True, default='')
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['alert_id', 'description'], name="unique_alert_error"),
+            models.UniqueConstraint(fields=['alert_url', 'description'], name="unique_alert_error"),
         ]
 
     def save(self, *args, **kwargs):
+        FeedLog.objects.filter(feed=self.feed, timestamp__lt=timezone.now() - timedelta(weeks=2)).delete()
         try:
             super(FeedLog, self).save(*args, **kwargs)
         except IntegrityError:
