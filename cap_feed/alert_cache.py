@@ -33,6 +33,7 @@ def cache_dynamic_alerts():
     static_alerts = get_static_alerts()
     #Fetch all new incoming alerts
     incoming_alerts = cache.get("incoming_alerts")
+
     #Appending the incoming alerts
     if incoming_alerts != None:
         static_alerts.update(incoming_alerts)
@@ -44,7 +45,11 @@ def cache_dynamic_alerts():
     #Delete the alerts of removed list in cache
     if removed_alerts != None:
         for alert_id in removed_alerts:
-            del static_alerts[alert_id]
+            try:
+                del static_alerts[alert_id]
+
+            except Exception as e:
+                print(f"Error : {e}")
     #Clear the incoming alerts list
     cache.set("removed_alerts", [], timeout=None)
     cache.set("static_alerts", static_alerts, timeout=None)
