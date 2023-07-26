@@ -1,12 +1,8 @@
 <!-- Cached template for static content -->
 {% load cache %}
 
-{% cache None static_alert_key %}
-    {{ alert_list_json }}
+{% cache 2000 static_alerts_key %}
+    <pre>{{ static_alerts }}</pre>
 {% endcache %}
-
-<!-- Add the dynamic content -->
-<div>
-
-    {{ dynamic_data }}
-</div>
+{% comment %} <!---> {% endcomment %}
+<pre>{{ dynamic_alerts }}</pre>

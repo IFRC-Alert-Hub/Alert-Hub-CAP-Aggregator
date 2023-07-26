@@ -1,7 +1,10 @@
+import json
+
 import cap_feed.data_injector as dl
 from django.http import HttpResponse
 from django.template import loader
 from .models import Alert, Feed
+from django.shortcuts import render
 
 import cap_feed.alert_cache as ac
 
@@ -23,20 +26,9 @@ def index(request):
     }
     return HttpResponse(template.render(context, request))
 
+def reset_template(request):
+    ac.reset_template()
+    return HttpResponse("Done")
 
-def cache_all_alert(request):
-    ac.cache_all_alerts()
-    return HttpResponse("Good Work!")
-
-
-def get_cached_data(request):
-    ac.return_all_cached_alerts()
-    return HttpResponse("Good Work!")
-
-def dynamic_view(request):
-    context = {
-        'static_alert': Alert.objects.all(),
-        'dynamic_alert': ac.return_all_cached_alerts(),
-    }
-    template = loader.get_template("cap_feed/rebroadcaster.html")
-    return HttpResponse(template.render(context, request))
+def get_alerts(request):
+    return HttpResponse(ac.get_all_alerts())
