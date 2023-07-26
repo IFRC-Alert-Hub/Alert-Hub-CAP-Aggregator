@@ -19,7 +19,7 @@ This is a Python web app using the Django framework and the Azure Database for P
 
 ### Upcoming Features
 - New alert manager for handling API requests and internal communication across components.  
---> Extremely fast API responses with Redis caching, more robust as a decoupled component.
+--> Extremely fast API responses with Redis caching, more robust as a decoupled component.  
 --> External and internal APIs for the Alert Hub map, subscription system, and other organisations such as rebroadcasters.
 - New geographical subdivisions (ISO 3166-2).  
 --> Sub-national regions and polygons to better group and display alerts. Also used to allow alert subscriptions to individual sub-national regions.
