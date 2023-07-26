@@ -62,9 +62,90 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
 
 ## Installation and Setup
 
-WIP due to upcoming changes to Websockets and Django Channels. More detailed instructions will be added including our Azure deployment process (maybe useful?).
+*It is possible to develop and run the Django app, Celery, and Redis using Docker on Windows. However, Celery and Redis are not officially supported and certain features such as concurrent Celery workers will not work.*
 
-### Useful Celery Commands
+1. Clone the repository and checkout the main or develop branch.
+    ```
+    git clone https://github.com/IFRC-Alert-Hub/Alert-Hub-CAP-Aggregator.git
+    git checkout develop
+    ```
+2. Set up and activate a virtual environment.  
+    Windows
+    ```
+    python -m venv venv
+    venv\Scripts\activate
+    ```
+    Linux
+    ```
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+3. Install packages with pip.
+    ```
+    pip install -r requirements.txt
+    ```
+4. Setup a PostGreSQL database and check it works.  
+    Linux
+    ```
+    sudo apt install postgresql postgresql-contrib
+    sudo passwd postgres
+    sudo service postgresql start
+    sudo -u postgres psql
+    create database cap_aggregator;
+
+    sudo service postgresql status
+    ```
+5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
+    Example
+    ```
+    DBNAME=cap_aggregator
+    DBHOST=localhost
+    DBUSER=username
+    DBPASS=1234
+    SECRET_KEY=d3bt^98*kjp^f&e3+=(0m(vge)6ky+ox76q4gbudy#-2kqkz%c
+    CELERY_BROKER_URL=redis://localhost:6379
+    REDIS_URL=redis://localhost:6379
+    ```
+6. Verify the progress so far by running some tests successfully.
+    ```
+    python manage.py migrate
+    python manage.py test
+    ```
+7. Setup a Redis server and check it works.  
+    Linux
+    ```
+    sudo apt install redis-server
+    sudo service redis-server start
+
+    redis-cli ping
+    ```
+8. Add admin credentials and start the Django server.
+    ```
+    python manage.py createsuperuser
+    python manage.py runserver
+    ```
+9. Check the Django app works so far.  
+    Initial geographical data and feeds should be loaded and visible in the feed facade after refreshing the index page.
+
+    Index page: http://127.0.0.1:8000/  
+    Feed facade: http://127.0.0.1:8000/admin/
+10. Start Celery works and the scheduler.  
+    Windows
+    ```
+    celery -A capaggregator worker -l info --pool=solo
+    celery -A capaggregator beat -l info
+    ```
+    Linux (-c [concurrent workers])
+    ```
+    celery -A capaggregator worker -l info -c 4
+    celery -A capaggregator beat -l info
+    ```
+11. Alerts are now being aggregated!  
+    Check the index page or feed facade for alert entries.
+
+    
+
+### Useful Commands
 
 Inspect active workers
 ```
@@ -75,11 +156,4 @@ Start celery worker and scheduler on deployment:
 ```
 celery multi start w1 -A capaggregator -l info
 celery -A capaggregator beat --detach -l info
-```
-
-Start celery worker and sceduler for local development:
-```
-celery -A capaggregator worker -l info --pool=solo
-celery -A capaggregator worker -l info -c 12
-celery -A capaggregator beat -l info
 ```
