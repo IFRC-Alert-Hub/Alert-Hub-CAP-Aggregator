@@ -7,15 +7,12 @@ import time
 
 #Cache alerts in a very intuitive way without any optimisation
 def cache_static_alerts():
-    alerts_list = []
+    alerts_dictionary = {}
     for alert in Alert.objects.all():
-        alerts_list.append(alert.to_dict())
-    static_alerts_dictionary = {"static_alerts:": alerts_list}
-    # Convert the dictionary to a JSON-formatted string
-    static_alerts_in_json = json.dumps(static_alerts_dictionary, indent=4)
-    if len(alerts_list) > 0:
-        static_alerts_in_json = static_alerts_in_json[0:-2] + ","
-    cache.set("static_alerts", static_alerts_in_json, timeout=None)
+        alert_key = alert.id
+        alerts_dictionary[alert_key] = alert.to_dict()
+
+    cache.set("static_alerts", alerts_dictionary, timeout=None)
     cache.set("static_alerts_have_been_cached", True, timeout=None)
 
 def get_static_alerts():
@@ -31,53 +28,33 @@ def reset_template():
     cache.delete("dynamic_alerts")
     cache.delete("incoming_alerts")
     cache.delete("removed_alerts")
-
+    cache.delete("static_alerts_have_been_cached")
 
 def cache_dynamic_alerts():
-    #Get current dynamic alert parts.
-    dynamic_alerts_dictionary = cache.get("dynamic_alerts")
-
+    #Fetch static alerts
+    static_alerts = get_static_alerts()
     #Fetch all new incoming alerts
-    new_incoming_alerts = cache.get("incoming_alerts")
-    #Extending the previous incoming alerts with new one
-    if dynamic_alerts_dictionary != None:
-        incoming_alerts = dynamic_alerts_dictionary["dynamic_alerts"]["incoming_alerts"]
-        incoming_alerts.extend(new_incoming_alerts)
-        updated_alerts_dictionary = {"incoming_alerts" : incoming_alerts}
-    else:
-        incoming_alerts = []
-        updated_alerts_dictionary = {"incoming_alerts": incoming_alerts}
-    #Fetch all new removed alerts
-    new_removed_alerts = cache.get("removed_alerts")
-    # Extending the previous expired alerts with new one
-    if dynamic_alerts_dictionary != None:
-        removed_alerts = dynamic_alerts_dictionary["dynamic_alerts"]["removed_alerts"]
-        removed_alerts.extend(new_removed_alerts)
-        removed_alerts_dictionary = {"removed_alerts": removed_alerts}
-    else:
-        removed_alerts = []
-        removed_alerts_dictionary = {"removed_alerts": removed_alerts}
+    incoming_alerts = cache.get("incoming_alerts")
+    #Appending the incoming alerts
+    if incoming_alerts != None:
+        static_alerts.update(incoming_alerts)
+    #Clear the incoming alerts list
+    cache.set("incoming_alerts", {}, timeout=None)
 
-    #Update the dynamic alerts
-    updated_alerts_dictionary.update(removed_alerts_dictionary)
-    if dynamic_alerts_dictionary == None:
-        dynamic_alerts_dictionary = {}
-    dynamic_alerts_dictionary["dynamic_alerts"] = updated_alerts_dictionary
+    #Fetch all remored alerts
+    removed_alerts = cache.get("removed_alerts")
+    #Delete the alerts of removed list in cache
+    if removed_alerts != None:
+        for alert_id in removed_alerts:
+            del static_alerts[alert_id]
+    #Clear the incoming alerts list
+    cache.set("removed_alerts", [], timeout=None)
+    cache.set("static_alerts", static_alerts, timeout=None)
 
     #Convert dictionary into json format
-    current_dynamic_alerts_in_json= json.dumps(dynamic_alerts_dictionary, indent=4)
-    current_dynamic_alerts_in_json = current_dynamic_alerts_in_json[2:]
+    all_alerts_in_json= json.dumps(static_alerts, indent=None)
+    return all_alerts_in_json
 
-    #Clear two dynamic sets
-    cache.set("incoming_alerts", [], timeout=None)
-    cache.set("removed_alerts", [], timeout=None)
-
-    #Update the cache
-    cache.set("dynamic_alerts", dynamic_alerts_dictionary, timeout=None)
-
-    return current_dynamic_alerts_in_json
-
-def get_dynamic_alerts():
-    current_dynamic_alerts_in_json = cache_dynamic_alerts()
-    return current_dynamic_alerts_in_json
+def get_all_alerts():
+    return cache_dynamic_alerts()
 

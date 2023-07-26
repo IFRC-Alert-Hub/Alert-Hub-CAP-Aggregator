@@ -22,7 +22,7 @@ def cache_incoming_alert(sender, instance, *args, **kwargs):
     from django.core.cache import cache
     incoming_alerts = cache.get("incoming_alerts")
     if instance.all_info_are_added() and incoming_alerts != None:
-        incoming_alerts.append(instance.to_dict())
+        incoming_alerts[instance.id] = instance.to_dict()
         # Get the two dictionary corresponding to cache keys
         cache.set("incoming_alerts", incoming_alerts)
 

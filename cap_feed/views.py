@@ -31,5 +31,4 @@ def reset_template(request):
     return HttpResponse("Done")
 
 def get_alerts(request):
-    context = {"static_alerts" : ac.get_static_alerts(), "dynamic_alerts": ac.get_dynamic_alerts()}
-    return HttpResponse(render(request, 'cap_feed/rebroadcaster.html', context))
+    return HttpResponse(ac.get_all_alerts())
