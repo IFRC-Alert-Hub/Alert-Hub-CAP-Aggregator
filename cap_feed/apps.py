@@ -1,22 +1,22 @@
 from django.apps import AppConfig
-from django.db.models.signals import post_delete,post_save
+from django.db.models.signals import post_delete, post_save
 
 
 
 class CapFeedConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'cap_feed'
-    # Listen to the new registration event of Source
+    # Listen to the new registration event of feed
     def ready(self):
-        Source = self.get_model("Source")
+        Feed = self.get_model("Feed")
         Alert = self.get_model("Alert")
-        post_delete.connect(delete_source, sender=Source)
+        post_delete.connect(delete_feed, sender=Feed)
         post_save.connect(cache_incoming_alert, sender=Alert)
         post_delete.connect(cache_removed_alert,sender=Alert)
-
-def delete_source(sender, instance, *args, **kwargs):
-    from .models import remove_source
-    remove_source(instance)
+    
+def delete_feed(sender, instance, *args, **kwargs):
+    from .models import remove_feed
+    remove_feed(instance)
 
 def cache_incoming_alert(sender, instance, *args, **kwargs):
     from django.core.cache import cache

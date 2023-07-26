@@ -1,17 +1,51 @@
 import pytz
 from datetime import datetime
-from cap_feed.formats.utils import convert_datetime
-import cap_feed.tasks as tasks
-
+from unittest import mock
+from io import StringIO
 from django.test import TestCase
 from django.utils import timezone
 
-from .models import Alert, AlertInfo, Country, Source
+from .models import Alert, AlertInfo, Country, Feed
+import cap_feed.tasks as tasks
+from cap_feed.formats.utils import convert_datetime
+from cap_feed.formats.format_handler import get_alerts
+
+
 
 class AlertModelTests(TestCase):
     fixtures = ['cap_feed/fixtures/test_data.json']
 
-    def test_alert_source_datetime_converted_to_utc(self):
+    def create_alert(self, id="", days=1):
+        alert = Alert()
+        alert.country = Country.objects.get(pk=1)
+        alert.feed = Feed.objects.get(url="test_feed")
+        alert.id = id
+        alert.identifier = ""
+        alert.sender = ""
+        alert.sent = timezone.now()
+        alert.status = 'Actual'
+        alert.msg_type = 'Alert'
+        alert.scope = 'Public'
+
+        alert_info = AlertInfo()
+        alert_info.alert = alert
+        alert_info.category = 'Met'
+        alert_info.event = ''
+        alert_info.urgency = 'Immediate'
+        alert_info.severity = 'Extreme'
+        alert_info.certainty = 'Observed'
+        alert_info.expires = timezone.now() + timezone.timedelta(days = days)
+
+        try:
+            alert.save()
+            alert_info.save()
+        # catch redis connection errors, not relevant for this test
+        except ValueError:
+            pass
+
+        return alert, alert_info
+
+    def test_feed_datetime_converted_to_utc(self):
         """
         Is the iso format cap alert datetime field with timezone offsets processed correctly to utc timezone?
         """
@@ -48,72 +82,44 @@ class AlertModelTests(TestCase):
         """
         Is an expired alert identified and removed from the database?
         """
-        alert = Alert()
-        alert.country = Country.objects.get(pk=1)
-        alert.source_feed = Source.objects.get(url="")
-        alert.id = ""
-        alert.identifier = ""
-        alert.sender = ""
-        alert.sent = timezone.now()
-        alert.status = 'Actual'
-        alert.msg_type = 'Alert'
-        alert.scope = 'Public'
-
-        alert_info = AlertInfo()
-        alert_info.alert = alert
-        alert_info.category = 'Met'
-        alert_info.event = ''
-        alert_info.urgency = 'Immediate'
-        alert_info.severity = 'Extreme'
-        alert_info.certainty = 'Observed'
-        alert_info.expires = timezone.now() - timezone.timedelta(days = 1)
-
-        try:
-            alert.save()
-            alert_info.save()
-        # catch redis connection errors, not relevant for this test
-        except ValueError:
-            pass
-
+        self.create_alert(days=-1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         tasks.remove_expired_alerts()
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
 
-    def test_unexpired_alert_is_not_removed(self):
+    def test_active_alert_is_kept(self):
         """
-        Is an expired alert identified and removed from the database?
+        Is an active alert identified and kept in the database?
         """
-        alert = Alert()
-        alert.country = Country.objects.get(pk=1)
-        alert.source_feed = Source.objects.get(url="")
-        alert.id = ""
-        alert.identifier = ""
-        alert.sender = ""
-        alert.sent = timezone.now()
-        alert.status = 'Actual'
-        alert.msg_type = 'Alert'
-        alert.scope = 'Public'
-
-        alert_info = AlertInfo()
-        alert_info.alert = alert
-        alert_info.category = 'Met'
-        alert_info.event = ''
-        alert_info.urgency = 'Immediate'
-        alert_info.severity = 'Extreme'
-        alert_info.certainty = 'Observed'
-        alert_info.expires = timezone.now() + timezone.timedelta(days = 1)
-
-        try:
-            alert.save()
-            alert_info.save()
-        # catch redis connection errors, not relevant for this test
-        except ValueError:
-            pass
-
+        self.create_alert(days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         tasks.remove_expired_alerts()
+        assert Alert.objects.count() == previous_alert_count
+        assert AlertInfo.objects.count() == previous_alert_info_count
+
+    def test_deleted_alert_is_removed(self):
+        """
+        Is an existing active alert removed from the database when it is deleted from the feed?
+        """
+        self.create_alert(id='test_id', days=1)
+        previous_alert_count = Alert.objects.count()
+        previous_alert_info_count = AlertInfo.objects.count()
+        with mock.patch('sys.stdout', new = StringIO()) as std_out:
+            get_alerts(Feed.objects.get(url="test_feed"), set())
+        assert Alert.objects.count() == previous_alert_count - 1
+        assert AlertInfo.objects.count() == previous_alert_info_count - 1
+
+    def test_persisting_alert_is_kept(self):
+        """
+        Is an existing active alert kept in the database when it persists in the feed?
+        """
+        self.create_alert(id='test_id', days=1)
+        previous_alert_count = Alert.objects.count()
+        previous_alert_info_count = AlertInfo.objects.count()
+        with mock.patch('sys.stdout', new = StringIO()) as std_out:
+            get_alerts(Feed.objects.get(url="test_feed"), {'test_id'})
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
