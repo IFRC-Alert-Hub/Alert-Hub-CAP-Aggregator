@@ -7,15 +7,21 @@ This is a Python web app using the Django framework and the Azure Database for P
 ## Features
 
 **Easily manage alert feeds**:
-- Change urls/polling intervals/feed countries
-- Set up new feeds quickly using templates to interpret xml formats
-- Identify problematic feeds with error logs
+- Customise different polling intervals for each feed.
+- Add new alerting sources quickly using pre-existing *formats* to interpret alert feeds.
+- Identify problematic feeds with helpful error logs
 
 **Get new alerts efficiently**:
 - Filtered queries using GraphQL
 - Automatic removal of expired and cancelled alerts
-- Distributed alert retrieval from feeds using Redis task queues
+- Distributed feed polling using Redis task queues and concurrent Celery workers
 - Websocket communication using Django Channels
+
+### Upcoming Features
+- New alert manager for handling API requests and internal communication across components.  
+--> Extremely fast API responses with Redis caching, more robust as a decoupled component.
+- New geographical subdivisions (ISO 3166-2).  
+--> Sub-national regions and polygons to better group and display alerts. Also used to allow alert subscriptions to individual sub-national regions.
 
 ## Table of Contents
 * Documentation
@@ -37,11 +43,11 @@ The allocation of countries into regions and continents is necessary for easier 
 ## Alert Aggregation Process
 *Alerts are retrieved and processed before they are handed off to be displayed on the Alert Hub and alert subscription system.*
 
-New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Alert feeds with the same polling interval are automatically grouped into the same periodic task used by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and *Celery* workers for asynchronous background processing.
+New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Each feed has its own periodic task that is managed by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and multiple *Celery* workers for distributed processing.
 
-When processing the CAP feed of alerting feeds, a processing template or format is used to interpret the different xml formats. For example, Meteoalarm represents a network of public weather services across Europe, and these European countries encode their cap alerts in the same xml format. The 'meteoalarm' format can therefore be selected when adding MeteoAlarm alerting feeds in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
+When processing the CAP feed of alerting feeds, a processing format is used to interpret the layout of different feeds. For example, the 'meteoalarm' format can be selected when adding MeteoAlarm feeds in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
 
-Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting feeds make changes to their alert feed format.
+Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting feeds make changes to their feed format. However, the same format can be used for up to dozens of feeds, and each format only differs by about 5-10 lines of code.
 
 The CAP-aggregator processes alerts according to the CAP-V1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting feeds keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
 
@@ -58,7 +64,7 @@ Deleting a region or continent would delete all countries belonging to them. In 
 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter feeds by format (e.g., meteoalarm) or search for feeds belonging to a particular country using the search bar on the same page.
 
-A page called 'Task results' is available under the 'Celery Results' section. This shows a historical record of all the tasks for retrieving new alerts and removing expired alerts. We intend to replace this section or amend existing sections with more informative feedback about the status of each feed. This would indicating possible problems to the admin such as connection issues, alert retrieval failure, and format compatibility.
+The 'Feed logs' section displays any issues or exceptions encountered while polling from different feeds. This feature offers very powerful feedback for admins. It describes the context of the problem (which feed and alert), what the exception is, what the exception means, the exact system error message, and possible solutions for the problem. Logs are kept in the system for 2 weeks and can identify connection problems, format problems, and violations of the CAP-v1.2 specification by alerting sources.
 
 ## Installation and Setup
 
@@ -70,12 +76,12 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
     git checkout develop
     ```
 2. Set up and activate a virtual environment.  
-    Windows
+    Windows:
     ```
     python -m venv venv
     venv\Scripts\activate
     ```
-    Linux
+    Linux:
     ```
     python3 -m venv venv
     source venv/bin/activate
@@ -85,7 +91,7 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
     pip install -r requirements.txt
     ```
 4. Setup a PostGreSQL database and check it works.  
-    Linux
+    Linux:
     ```
     sudo apt install postgresql postgresql-contrib
     sudo passwd postgres
@@ -96,7 +102,7 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
     sudo service postgresql status
     ```
 5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
-    Example
+    Example:
     ```
     DBNAME=cap_aggregator
     DBHOST=localhost
@@ -112,7 +118,7 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
     python manage.py test
     ```
 7. Setup a Redis server and check it works.  
-    Linux
+    Linux:
     ```
     sudo apt install redis-server
     sudo service redis-server start
@@ -130,7 +136,7 @@ A page called 'Task results' is available under the 'Celery Results' section. Th
     Index page: http://127.0.0.1:8000/  
     Feed facade: http://127.0.0.1:8000/admin/
 10. Start Celery works and the scheduler.  
-    Windows
+    Windows:
     ```
     celery -A capaggregator worker -l info --pool=solo
     celery -A capaggregator beat -l info
