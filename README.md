@@ -9,7 +9,7 @@ This is a Python web app using the Django framework and the Azure Database for P
 **Easily manage alert feeds**:
 - Change urls/polling intervals/feed countries
 - Set up new feeds quickly using templates to interpret xml formats
-- Identify problematic feeds with feedback (WIP)
+- Identify problematic feeds with error logs
 
 **Get new alerts efficiently**:
 - Filtered queries using GraphQL
@@ -80,5 +80,6 @@ celery -A capaggregator beat --detach -l info
 Start celery worker and sceduler for local development:
 ```
 celery -A capaggregator worker -l info --pool=solo
+celery -A capaggregator worker -l info -c 12
 celery -A capaggregator beat -l info
 ```

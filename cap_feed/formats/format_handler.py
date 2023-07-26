@@ -29,10 +29,10 @@ def get_alerts(feed, alert_urls):
             case "meteo_ru":
                 new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteo_ru(feed)
             case _:
-                print("Format not supported")
+                print(f'Format not supported: {feed}')
                 new_alert_urls, polled_alerts_count, valid_poll = set(), 0, True
     except Exception as e:
-        print(f"Error getting alerts from {feed.url}: {e}")
+        print(f'Error getting alerts from {feed.url}: {e}')
 
     if valid_poll:
         alert_urls.update(new_alert_urls)
