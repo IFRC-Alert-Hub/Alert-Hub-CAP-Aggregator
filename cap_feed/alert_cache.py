@@ -23,12 +23,10 @@ def get_static_alerts():
         return cache.get("static_alerts")
 
 def reset_template():
-    key = make_template_fragment_key('static_alerts_key')
-    cache.delete(key)
-    cache.delete("dynamic_alerts")
+    cache.delete("static_alerts_have_been_cached")
+    cache.delete("static_alerts")
     cache.delete("incoming_alerts")
     cache.delete("removed_alerts")
-    cache.delete("static_alerts_have_been_cached")
 
 def cache_dynamic_alerts():
     #Fetch static alerts
