@@ -1,66 +1,63 @@
+import json
+from django.core.cache.utils import make_template_fragment_key
 from django.core.cache import cache
 from .models import Alert
 import time
 
 
 #Cache alerts in a very intuitive way without any optimisation
-def cache_all_alerts():
-    # Fetch all instances of the Alert model
-    alerts = Alert.objects.all()
+def cache_static_alerts():
+    alerts_dictionary = {}
+    for alert in Alert.objects.all():
+        alert_key = alert.id
+        alerts_dictionary[alert_key] = alert.to_dict()
 
-    # Convert each alert instance to a dictionary representation
-    alert_dicts = [alert.to_dict() for alert in alerts]
+    cache.set("static_alerts", alerts_dictionary, timeout=None)
+    cache.set("static_alerts_have_been_cached", True, timeout=None)
 
-    # Store the alert_dicts in the cache using a unique key
-    cache_key = 'all_alerts'
-    cache.set(cache_key, alert_dicts, timeout=None)
+def get_static_alerts():
+    if cache.get("static_alerts_have_been_cached") == None:
+        cache_static_alerts()
+        return cache.get("static_alerts")
+    else:
+        return cache.get("static_alerts")
 
-def return_all_cached_alerts():
-    #Set the alert keys
-    all_alerts_cache_key = 'all_alerts'
-    new_alerts_cache_key = 'new'
+def reset_template():
+    cache.delete("static_alerts_have_been_cached")
+    cache.delete("static_alerts")
+    cache.delete("incoming_alerts")
+    cache.delete("removed_alerts")
 
-    #Get the two dictionary corresponding to cache keys
-    start_time1 = time.time()
+def cache_dynamic_alerts():
+    #Fetch static alerts
+    static_alerts = get_static_alerts()
+    #Fetch all new incoming alerts
+    incoming_alerts = cache.get("incoming_alerts")
 
-    #Alert Cache
-    all_alerts = cache.get(all_alerts_cache_key)
-    # Record the end time
-    end_time1 = time.time()
+    #Appending the incoming alerts
+    if incoming_alerts != None:
+        static_alerts.update(incoming_alerts)
+    #Clear the incoming alerts list
+    cache.set("incoming_alerts", {}, timeout=None)
 
-    print(len(all_alerts))
+    #Fetch all remored alerts
+    removed_alerts = cache.get("removed_alerts")
+    #Delete the alerts of removed list in cache
+    if removed_alerts != None:
+        for alert_id in removed_alerts:
+            try:
+                del static_alerts[alert_id]
 
-    # Calculate the time spent (in seconds)
-    time_spent_seconds1 = end_time1 - start_time1
+            except Exception as e:
+                print(f"Error : {e}")
+    #Clear the incoming alerts list
+    cache.set("removed_alerts", [], timeout=None)
+    cache.set("static_alerts", static_alerts, timeout=None)
 
-    # Convert to milliseconds
-    time_spent_milliseconds1 = time_spent_seconds1 * 1000
+    #Convert dictionary into json format
+    all_alerts_in_json= json.dumps(static_alerts, indent=None)
+    return all_alerts_in_json
 
-    # Get the two dictionary corresponding to cache keys
-    start_time2 = time.time()
-    # Fetch all instances of the Alert model
-    alerts = list(Alert.objects.all())
-    # Record the end time
-    end_time2 = time.time()
+def get_all_alerts():
+    return cache_dynamic_alerts()
 
-    # Calculate the time spent (in seconds)
-    time_spent_seconds2 = end_time2 - start_time2
-
-    # Convert to milliseconds
-    time_spent_milliseconds2 = time_spent_seconds2 * 1000
-
-    # Print the result
-    print(f"Time spent (milliseconds), Redis Cache: {time_spent_milliseconds1}, "
-          f"Django Model: {time_spent_milliseconds2}")
-
-    #keys = cache.keys('*')
-    #print(keys)
-    #new_alerts = cache.get(new_alerts_cache_key)
-    #Update the alerts with new one
-    #all_alerts.update(new_alerts)
-    #Set the new cache key
-   # cache.set(all_alerts_cache_key, all_alerts)
-
-    #Remove the old alerts
-    #cache.delete(new_alerts)
-    #return new_alerts
