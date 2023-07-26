@@ -2,7 +2,7 @@ import pytz
 from datetime import datetime
 from unittest import mock
 from io import StringIO
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from .models import Alert, AlertInfo, Country, Feed
@@ -12,16 +12,21 @@ from cap_feed.formats.format_handler import get_alerts
 
 
 
+@override_settings(CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+})
 class AlertModelTests(TestCase):
     fixtures = ['cap_feed/fixtures/test_data.json']
 
-    def create_alert(self, id="", days=1):
+    def create_alert(self, url='', days=1):
         alert = Alert()
         alert.country = Country.objects.get(pk=1)
-        alert.feed = Feed.objects.get(url="test_feed")
-        alert.id = id
-        alert.identifier = ""
-        alert.sender = ""
+        alert.feed = Feed.objects.get(url='test_feed')
+        alert.url = url
+        alert.identifier = ''
+        alert.sender = ''
         alert.sent = timezone.now()
         alert.status = 'Actual'
         alert.msg_type = 'Alert'
@@ -36,12 +41,8 @@ class AlertModelTests(TestCase):
         alert_info.certainty = 'Observed'
         alert_info.expires = timezone.now() + timezone.timedelta(days = days)
 
-        try:
-            alert.save()
-            alert_info.save()
-        # catch redis connection errors, not relevant for this test
-        except ValueError:
-            pass
+        alert.save()
+        alert_info.save()
 
         return alert, alert_info
 
@@ -104,22 +105,21 @@ class AlertModelTests(TestCase):
         """
         Is an existing active alert removed from the database when it is deleted from the feed?
         """
-        self.create_alert(id='test_id', days=1)
+        self.create_alert(url='test_url', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
             get_alerts(Feed.objects.get(url="test_feed"), set())
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
-
     def test_persisting_alert_is_kept(self):
         """
         Is an existing active alert kept in the database when it persists in the feed?
         """
-        self.create_alert(id='test_id', days=1)
+        self.create_alert(url='test_url', days=1)
         previous_alert_count = Alert.objects.count()
         previous_alert_info_count = AlertInfo.objects.count()
         with mock.patch('sys.stdout', new = StringIO()) as std_out:
-            get_alerts(Feed.objects.get(url="test_feed"), {'test_id'})
+            get_alerts(Feed.objects.get(url="test_feed"), {'test_url'})
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
