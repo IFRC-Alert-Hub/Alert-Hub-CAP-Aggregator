@@ -15,8 +15,8 @@ def get_alerts(feed, alert_urls):
     valid_poll = False
 
     
-    print(f'Feed: {feed}')
-    print(f'Alerts in system: {Alert.objects.filter(feed=feed).count()}')
+    print(f'Processing feed: {feed}')
+    #print(f'Alerts in system: {Alert.objects.filter(feed=feed).count()}')
     
     try:
         match feed.format:
@@ -36,10 +36,10 @@ def get_alerts(feed, alert_urls):
 
     if valid_poll:
         alert_urls.update(new_alert_urls)
-        print(f'Valid alerts in feed: {len(alert_urls)}')
+        #print(f'Valid alerts in feed: {len(alert_urls)}')
         # delete alerts that are no longer active
         deleted_alerts = Alert.objects.filter(feed=feed).exclude(id__in=alert_urls)
-        print(f'Alerts deleted: {deleted_alerts.count()}')
+        #print(f'Alerts deleted: {deleted_alerts.count()}')
         deleted_alerts.delete()
 
     return polled_alerts_count

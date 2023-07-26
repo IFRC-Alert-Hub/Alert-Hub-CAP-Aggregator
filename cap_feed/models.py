@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from django_celery_beat.models import PeriodicTask
@@ -63,7 +63,7 @@ class Feed(models.Model):
         self.__previous_url = self.url
 
     def __str__(self):
-        name = self.format + ' ' + str(self.country)
+        name = self.name
         return name
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
@@ -409,6 +409,26 @@ class AlertInfoAreaGeocode(models.Model):
         alert_info_area_geocode_dict['value'] = self.value
         return alert_info_area_geocode_dict
     
+class FeedLog(models.Model):
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
+    exception = models.CharField(max_length=255, default='exception')
+    error_message = models.TextField(default='')
+    description = models.TextField(default='')
+    response = models.TextField(default='')
+    alert_id = models.CharField(max_length=255, blank=True, default='')
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['alert_id', 'description'], name="unique_alert_error"),
+        ]
+
+    def save(self, *args, **kwargs):
+        try:
+            super(FeedLog, self).save(*args, **kwargs)
+        except IntegrityError:
+            pass
+
 # Adds feed to a periodic task
 def add_feed(feed):
     interval = feed.polling_interval

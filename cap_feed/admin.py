@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, Feed
+from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, Feed, FeedLog
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule
 from django_celery_results.models import GroupResult
 
@@ -32,7 +32,7 @@ class AlertInfoInline(admin.StackedInline):
     extra = 0
 
 class AlertAdmin(admin.ModelAdmin):
-    list_display = ["id", "feed", "sent", "status", "msg_type", "scope"]
+    list_display = ["id", "country", "feed", "sent", "status", "msg_type", "scope"]
     list_filter = ["feed", "country"]
     search_fields = ["id"]
     fieldsets = [
@@ -51,6 +51,11 @@ class FeedAdmin(admin.ModelAdmin):
     list_filter = ["format", "polling_interval"]
     search_fields = ["url", "country"]
 
+class FeedLogAdmin(admin.ModelAdmin):
+    list_display = ["exception", "feed", "description", "alert_id", "error_message", "timestamp"]
+    list_filter = ["feed"]
+    search_fields = ["feed", "exception", "alert_id"]
+
 
 
 admin.site.register(Alert, AlertAdmin)
@@ -64,6 +69,7 @@ admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
 admin.site.register(Feed, FeedAdmin)
+admin.site.register(FeedLog, FeedLogAdmin)
 
 admin.site.unregister(GroupResult)
 admin.site.unregister(CrontabSchedule)
