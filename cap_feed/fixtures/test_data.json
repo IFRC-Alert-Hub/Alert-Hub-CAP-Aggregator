@@ -29,9 +29,9 @@
       }
     },
     {
-      "model": "cap_feed.source",
+      "model": "cap_feed.feed",
       "fields": {
-        "url": "test_source",
+        "url": "test_feed",
         "country": 1,
         "format": "test_format",
         "polling_interval": 10

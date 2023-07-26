@@ -1,16 +1,16 @@
-from cap_feed.models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode
+from cap_feed.models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
 from django.utils import timezone
 from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime
 
 
 
-def get_alert(id, alert_root, source, ns):
+def get_alert(id, alert_root, feed, ns):
     try:
         # register alert
         alert = Alert()
-        alert.source_feed = source
-        alert.country = source.country
+        alert.feed = feed
+        alert.country = feed.country
         alert.id = id
         alert.identifier = alert_root.find('cap:identifier', ns).text
         alert.sender = alert_root.find('cap:sender', ns).text
@@ -99,14 +99,25 @@ def get_alert(id, alert_root, source, ns):
             return alert.id, True
     
     except IntegrityError as e:
-        print(f"IntegrityError from source: {source.url}")
-        print(f"Alert id: {id}")
-        print("It is likely that this CAP alert violates CAP-v1.2 schema by not providing required values.")
-        print(e)
+        log = FeedLog()
+        log.feed = feed
+        log.exception = 'IntegrityError'
+        log.error_message = e
+        log.description = 'This is caused by a violation of the Alert schema.'
+        log.response = ('Check that the xml elements of the alert contains valid data according to CAP-v1.2 schema.\n'
+        + 'For example, the content of a <polygon> tag cannot be empty since the CAP aggregator expects valid data inside this optional tag if it is found.')
+        log.alert_id = id
+        log.save()
+
     except AttributeError as e:
-        print(f"AttributeError from source: {source.url}")
-        print(f"Alert id: {id}")
-        print("It is likely that this CAP alert violates CAP-v1.2 schema by not providing necessary xml elements.")
-        print(e)
+        log = FeedLog()
+        log.feed = feed
+        log.exception = 'AttributeError'
+        log.error_message = e
+        log.description = 'It is likely that this CAP alert violates CAP-v1.2 schema by not providing necessary xml elements.'
+        log.response = ('Check the alert xml is structured correctly and contains all required elements according to CAP-v1.2 schema.\n'
+        + 'For example, urgency is a required field that must be present in the alert xml.')
+        log.alert_id = id
+        log.save()
 
     return alert.id, False

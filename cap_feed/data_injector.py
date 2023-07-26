@@ -1,7 +1,7 @@
 import os
 import json
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Alert, Continent, Region, Country, Source
+from .models import Alert, Continent, Region, Country, Feed
 from cap_feed.formats import format_handler as fh
 
 
@@ -102,10 +102,10 @@ def inject_countries():
                 country.save()
             processed_iso3.add(country.iso3)
 
-# inject source configurations if not already present
-def inject_sources():
+# inject feed configurations if not already present
+def inject_feeds():
     # this could be converted to a fixture
-    source_data = [
+    feed_data = [
         ("Meteo-France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
         ("Meteo-Austria", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
         ("Meteo-Slovenia", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
@@ -121,11 +121,11 @@ def inject_sources():
         ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
     ]
 
-    for source_entry in source_data:
-        source = Source()
-        source.name = source_entry[0]
-        source.url = source_entry[1]
-        source.polling_interval = 60
-        source.country = Country.objects.get(iso3 = source_entry[2])
-        source.format = source_entry[3]
-        source.save()
+    for feed_entry in feed_data:
+        feed = Feed()
+        feed.name = feed_entry[0]
+        feed.url = feed_entry[1]
+        feed.polling_interval = 60
+        feed.country = Country.objects.get(iso3 = feed_entry[2])
+        feed.format = feed_entry[3]
+        feed.save()
