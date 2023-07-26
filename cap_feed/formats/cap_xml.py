@@ -1,7 +1,7 @@
 from cap_feed.models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
 from django.utils import timezone
 from django.db import IntegrityError
-from cap_feed.formats.utils import convert_datetime
+from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror
 
 
 
@@ -100,26 +100,9 @@ def get_alert(url, alert_root, feed, ns):
             alert.save()
             return alert.url, True
     
-    except IntegrityError as e:
-        log = FeedLog()
-        log.feed = feed
-        log.exception = 'IntegrityError'
-        log.error_message = e
-        log.description = 'This is caused by a violation of the Alert schema.'
-        log.response = ('Check that the xml elements of the alert contains valid data according to CAP-v1.2 schema.\n'
-        + 'For example, the content of a <polygon> tag cannot be empty since the CAP aggregator expects valid data inside this optional tag if it is found.')
-        log.alert_url = url
-        log.save()
-
     except AttributeError as e:
-        log = FeedLog()
-        log.feed = feed
-        log.exception = 'AttributeError'
-        log.error_message = e
-        log.description = 'It is likely that this CAP alert violates CAP-v1.2 schema by not providing necessary xml elements.'
-        log.response = ('Check the alert xml is structured correctly and contains all required elements according to CAP-v1.2 schema.\n'
-        + 'For example, urgency is a required field that must be present in the alert xml.')
-        log.alert_url = url
-        log.save()
+        log_attributeerror(feed, e, url)
+    except IntegrityError as e:
+        log_integrityerror(feed, e, url)
 
     return alert.url, False
