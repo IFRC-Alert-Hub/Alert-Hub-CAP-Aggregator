@@ -19,7 +19,8 @@ This is a Python web app using the Django framework and the Azure Database for P
 
 ### Upcoming Features
 - New alert manager for handling API requests and internal communication across components.  
---> Extremely fast API responses with Redis caching, more robust as a decoupled component.
+--> Extremely fast API responses with Redis caching, more robust as a decoupled component.  
+--> External and internal APIs for the Alert Hub map, subscription system, and other organisations such as rebroadcasters.
 - New geographical subdivisions (ISO 3166-2).  
 --> Sub-national regions and polygons to better group and display alerts. Also used to allow alert subscriptions to individual sub-national regions.
 
@@ -49,9 +50,9 @@ When processing the CAP feed of alerting feeds, a processing format is used to i
 
 Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting feeds make changes to their feed format. However, the same format can be used for up to dozens of feeds, and each format only differs by about 5-10 lines of code.
 
-The CAP-aggregator processes alerts according to the CAP-V1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting feeds keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
+The CAP-aggregator processes alerts according to the CAP-v1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting feeds keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
 
-Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP V-1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
+Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP-v1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
 
 Alerts are aggregated by countries, regions, and continents. Using filtered queries with GraphQL, the Alert Hub and other broadcasters can easily fetch only the relevant alerts, reducing unnecessary strain on the system.
 
