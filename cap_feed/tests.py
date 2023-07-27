@@ -12,11 +12,6 @@ from cap_feed.formats.format_handler import get_alerts
 
 
 
-@override_settings(CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-})
 class AlertModelTests(TestCase):
     fixtures = ['cap_feed/fixtures/test_data.json']
 
@@ -79,6 +74,11 @@ class AlertModelTests(TestCase):
         assert timezone.get_default_timezone_name() == 'UTC'
         assert timezone.get_current_timezone_name() == 'UTC'
 
+    @override_settings(CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    })
     def test_expired_alert_is_removed(self):
         """
         Is an expired alert identified and removed from the database?
@@ -90,6 +90,11 @@ class AlertModelTests(TestCase):
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
 
+    @override_settings(CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    })
     def test_active_alert_is_kept(self):
         """
         Is an active alert identified and kept in the database?
@@ -101,6 +106,11 @@ class AlertModelTests(TestCase):
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
 
+    @override_settings(CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    })
     def test_deleted_alert_is_removed(self):
         """
         Is an existing active alert removed from the database when it is deleted from the feed?
@@ -112,6 +122,12 @@ class AlertModelTests(TestCase):
             get_alerts(Feed.objects.get(url="test_feed"), set())
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
+
+    @override_settings(CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    })
     def test_persisting_alert_is_kept(self):
         """
         Is an existing active alert kept in the database when it persists in the feed?
