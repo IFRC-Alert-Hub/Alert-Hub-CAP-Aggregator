@@ -69,7 +69,7 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
 
 ## Installation and Setup
 
-*It is possible to develop and run the Django app, Celery, and Redis using Docker on Windows. However, Celery and Redis are not officially supported and certain features such as concurrent Celery workers will not work.*
+*It is possible to develop and run a fully functional CAP aggregator on Windows including the Django app, Celery, and Redis using Docker. However, Celery and Redis are not officially supported and certain features such as concurrent Celery workers will not work.*
 
 1. Clone the repository and checkout the main or develop branch.
     ```
@@ -150,7 +150,7 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
 11. Alerts are now being aggregated!  
     Check the index page or feed facade for alert entries.
 
-    
+## Azure Deployment
 
 ### Useful Commands
 

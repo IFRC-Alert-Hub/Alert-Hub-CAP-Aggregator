@@ -2,7 +2,7 @@ import pytz
 from datetime import datetime
 from unittest import mock
 from io import StringIO
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 
 from .models import Alert, AlertInfo, Country, Feed
@@ -12,11 +12,6 @@ from cap_feed.formats.format_handler import get_alerts
 
 
 
-@override_settings(CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-})
 class AlertModelTests(TestCase):
     fixtures = ['cap_feed/fixtures/test_data.json']
 
@@ -112,6 +107,7 @@ class AlertModelTests(TestCase):
             get_alerts(Feed.objects.get(url="test_feed"), set())
         assert Alert.objects.count() == previous_alert_count - 1
         assert AlertInfo.objects.count() == previous_alert_info_count - 1
+
     def test_persisting_alert_is_kept(self):
         """
         Is an existing active alert kept in the database when it persists in the feed?
