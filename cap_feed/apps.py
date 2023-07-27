@@ -19,18 +19,14 @@ def delete_feed(sender, instance, *args, **kwargs):
     remove_task(instance)
 
 def cache_incoming_alert(sender, instance, *args, **kwargs):
-    from django.core.cache import cache
-    incoming_alerts = cache.get("incoming_alerts")
-    if instance.all_info_are_added() and incoming_alerts != None:
-        incoming_alerts[instance.id] = instance.to_dict()
-        # Get the two dictionary corresponding to cache keys
-        cache.set("incoming_alerts", incoming_alerts)
+    from capaggregator.celery import app
+    if instance.all_info_are_added():
+        app.send_task('alert_cache.tasks.cache_incoming_alert', args=[], kwargs={'alert_id': instance.id},
+                               queue='cache',
+                               routing_key='cache.#', exchange='cache')
 
 def cache_removed_alert(sender, instance, *args, **kwargs):
-    from django.core.cache import cache
-    removed_alerts = cache.get("removed_alerts")
-    if removed_alerts != None:
-        print(instance.id)
-        removed_alerts.append(instance.id)
-        # Get the two dictionary corresponding to cache keys
-        cache.set("removed_alerts", removed_alerts)
+    from capaggregator.celery import app
+    app.send_task('alert_cache.tasks.remove_cached_alert', args=[], kwargs={'alert_id': instance.id},
+                            queue='cache',
+                            routing_key='cache.#', exchange='cache')

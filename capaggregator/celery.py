@@ -4,6 +4,7 @@ from celery.schedules import crontab
 from datetime import timedelta
 from django.conf import settings
 from dotenv import load_dotenv
+from kombu import Queue
 
 # Load environment variables from .env file
 if 'WEBSITE_HOSTNAME' not in os.environ:
@@ -20,6 +21,7 @@ app.conf.beat_schedule = {
         'schedule': timedelta(minutes=1)
     }
 }
+
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
@@ -28,6 +30,15 @@ app.config_from_object(settings, namespace='CELERY')
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+app.conf.task_default_queue = 'default'
+app.conf.task_queues = (
+    Queue('default', routing_key='poll.#', exchange='poll'),
+)
+app.conf.task_default_exchange = 'poll'
+app.conf.task_default_exchange_type = 'topic'
+app.conf.task_default_routing_key = 'poll.default'
+
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
