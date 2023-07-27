@@ -31,6 +31,7 @@ This is a Python web app using the Django framework and the Azure Database for P
     * <a href="#feed-facade">Feed Facade</a>
 * Development
     * <a href="#installation-and-setup">Installation and Setup</a>
+    * <a href="#azure-deployment">Azure Deployment</a>
 
 ## Geographical Organisation
 *The structure behind the handling of alerts and feeds involves a clear distinction between different geographical areas.*
@@ -98,14 +99,14 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     sudo passwd postgres
     sudo service postgresql start
     sudo -u postgres psql
-    create database cap_aggregator;
+    create database cap-aggregator;
 
     sudo service postgresql status
     ```
 5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
     Example:
     ```
-    DBNAME=cap_aggregator
+    DBNAME=cap-aggregator
     DBHOST=localhost
     DBUSER=username
     DBPASS=1234
@@ -142,7 +143,7 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     celery -A capaggregator worker -l info --pool=solo
     celery -A capaggregator beat -l info
     ```
-    Linux (-c [concurrent workers])
+    Linux: (-c [concurrent workers])
     ```
     celery -A capaggregator worker -l info -c 4
     celery -A capaggregator beat -l info
@@ -151,8 +152,54 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     Check the index page or feed facade for alert entries.
 
 ## Azure Deployment
+*The deploy steps of the CAP aggregator on Azure to communicate with other Alert Hub components.*
 
-### Useful Commands
+The CAP aggregator uses three main Azure components: Web App(App Service), PostgreSQL database (Azure Database for PostgreSQL flexible server), and Redis Cache (Azure Cache for Redis).
+
+1. Create a Web App  
+    Publish: Code  
+    Runtime stack: Python 3.11  
+    Operating System: Linux
+2. Create a PostGreSQL server and Redis Cache  
+    Create a database e.g., 'cap-aggregator'  
+    Create a Redis Cache e.g., 'cap-aggregator' with private endpoint.
+3. Configure the Web App  
+    Under 'Configuration' and 'Application settings' add new application settings
+    ```
+    Name: AZURE_POSTGRESQL_CONNECTIONSTRING
+    Value: dbname={database name} host={server name}.postgres.database.azure.com port=5432 sslmode=require user={username} password={password}
+
+    Name: SCM_DO_BUILD_DURING_DEPLOYMENT
+    Value: 1
+
+    Name: SECRET_KEY
+    Value: {secret_key}
+
+    Name: CELERY_BROKER_URL
+    Value: rediss://:{redis key}=@{dns name}.redis.cache.windows.net:6380/5
+
+    Name: REDIS_URL
+    Value: rediss://:{redis key}=@{dns name}.redis.cache.windows.net:6380/6
+    ```
+    Under 'General settings' add a startup command
+    ```
+    startup.sh
+    ```
+4. Connect Web App to code source  
+    Set GitHub as the source, select the correct branch, and save the automatically generated GitHub Actions workflow.
+5. The Azure deployment should now be linked to the GitHub source and the web app will automatically build and deploy.
+
+You can check on the status of the container at 'Log stream'.  
+Use the SSH console to interact with Celery services and create admin users for the feed facade.
+
+
+### Extra Commands
+*These commands can be useful while troubleshooting, but aren't necessary to deploy the CAP-aggregator.*
+
+Configure number of celery workers in startup.sh according to available core count. For example, '2' for low spec virtual machine, '12' for high spec local machine.
+```
+celery -A capaggregator worker -l info -c 2
+```
 
 Inspect active workers
 ```
