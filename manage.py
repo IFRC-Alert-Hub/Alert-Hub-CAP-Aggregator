@@ -16,7 +16,12 @@ def main():
         load_dotenv('./.env')
 
     # When running on Azure App Service you should use the production settings.
-    settings_module = "capaggregator.production" if 'WEBSITE_HOSTNAME' in os.environ else 'capaggregator.settings'
+    if 'WEBSITE_HOSTNAME' in os.environ:
+        settings_module = "capaggregator.production"
+    elif 'test' in sys.argv:
+        settings_module = "capaggregator.testing"
+    else:
+        settings_module = "capaggregator.settings"
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
 
     try:

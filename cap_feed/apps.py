@@ -15,8 +15,8 @@ class CapFeedConfig(AppConfig):
         post_delete.connect(cache_removed_alert,sender=Alert)
     
 def delete_feed(sender, instance, *args, **kwargs):
-    from .models import remove_feed
-    remove_feed(instance)
+    from .models import remove_task
+    remove_task(instance)
 
 def cache_incoming_alert(sender, instance, *args, **kwargs):
     from django.core.cache import cache

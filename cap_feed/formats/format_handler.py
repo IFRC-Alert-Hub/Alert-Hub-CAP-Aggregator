@@ -29,16 +29,16 @@ def get_alerts(feed, alert_urls):
             case "meteo_ru":
                 new_alert_urls, polled_alerts_count, valid_poll = get_alerts_meteo_ru(feed)
             case _:
-                print("Format not supported")
+                print(f'Format not supported: {feed}')
                 new_alert_urls, polled_alerts_count, valid_poll = set(), 0, True
     except Exception as e:
-        print(f"Error getting alerts from {feed.url}: {e}")
+        print(f'Error getting alerts from {feed.url}: {e}')
 
     if valid_poll:
         alert_urls.update(new_alert_urls)
         #print(f'Valid alerts in feed: {len(alert_urls)}')
         # delete alerts that are no longer active
-        deleted_alerts = Alert.objects.filter(feed=feed).exclude(id__in=alert_urls)
+        deleted_alerts = Alert.objects.filter(feed=feed).exclude(url__in=alert_urls)
         #print(f'Alerts deleted: {deleted_alerts.count()}')
         deleted_alerts.delete()
 

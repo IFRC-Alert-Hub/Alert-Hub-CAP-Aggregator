@@ -7,15 +7,22 @@ This is a Python web app using the Django framework and the Azure Database for P
 ## Features
 
 **Easily manage alert feeds**:
-- Change urls/polling intervals/feed countries
-- Set up new feeds quickly using templates to interpret xml formats
-- Identify problematic feeds with feedback (WIP)
+- Customise different polling intervals for each feed.
+- Add new alerting sources quickly using pre-existing *formats* to interpret alert feeds.
+- Identify problematic feeds with helpful error logs
 
 **Get new alerts efficiently**:
 - Filtered queries using GraphQL
 - Automatic removal of expired and cancelled alerts
-- Distributed alert retrieval from feeds using Redis task queues
+- Distributed feed polling using Redis task queues and concurrent Celery workers
 - Websocket communication using Django Channels
+
+### Upcoming Features
+- New alert manager for handling API requests and internal communication across components.  
+--> Extremely fast API responses with Redis caching, more robust as a decoupled component.  
+--> External and internal APIs for the Alert Hub map, subscription system, and other organisations such as rebroadcasters.
+- New geographical subdivisions (ISO 3166-2).  
+--> Sub-national regions and polygons to better group and display alerts. Also used to allow alert subscriptions to individual sub-national regions.
 
 ## Table of Contents
 * Documentation
@@ -24,6 +31,7 @@ This is a Python web app using the Django framework and the Azure Database for P
     * <a href="#feed-facade">Feed Facade</a>
 * Development
     * <a href="#installation-and-setup">Installation and Setup</a>
+    * <a href="#azure-deployment">Azure Deployment</a>
 
 ## Geographical Organisation
 *The structure behind the handling of alerts and feeds involves a clear distinction between different geographical areas.*
@@ -37,15 +45,15 @@ The allocation of countries into regions and continents is necessary for easier 
 ## Alert Aggregation Process
 *Alerts are retrieved and processed before they are handed off to be displayed on the Alert Hub and alert subscription system.*
 
-New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Alert feeds with the same polling interval are automatically grouped into the same periodic task used by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and *Celery* workers for asynchronous background processing.
+New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Each feed has its own periodic task that is managed by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and multiple *Celery* workers for distributed processing.
 
-When processing the CAP feed of alerting feeds, a processing template or format is used to interpret the different xml formats. For example, Meteoalarm represents a network of public weather services across Europe, and these European countries encode their cap alerts in the same xml format. The 'meteoalarm' format can therefore be selected when adding MeteoAlarm alerting feeds in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
+When processing the CAP feed of alerting feeds, a processing format is used to interpret the layout of different feeds. For example, the 'meteoalarm' format can be selected when adding MeteoAlarm feeds in the feed facade, but a different format would need to be used to interpret alerts from the Algerian Meteorological Office.
 
-Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting feeds make changes to their alert feed format.
+Formats are very convenient for admin users and can guarantee alerts are processed correctly. But they inevitably have to be manually created by developers and updated if alerting feeds make changes to their feed format. However, the same format can be used for up to dozens of feeds, and each format only differs by about 5-10 lines of code.
 
-The CAP-aggregator processes alerts according to the CAP-V1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting feeds keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
+The CAP-aggregator processes alerts according to the CAP-v1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone. Some alerting feeds keep outdated alerts on their alert feeds, so expired alerts are identified and are not saved.
 
-Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP V-1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
+Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP-v1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
 
 Alerts are aggregated by countries, regions, and continents. Using filtered queries with GraphQL, the Alert Hub and other broadcasters can easily fetch only the relevant alerts, reducing unnecessary strain on the system.
 
@@ -58,13 +66,140 @@ Deleting a region or continent would delete all countries belonging to them. In 
 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter feeds by format (e.g., meteoalarm) or search for feeds belonging to a particular country using the search bar on the same page.
 
-A page called 'Task results' is available under the 'Celery Results' section. This shows a historical record of all the tasks for retrieving new alerts and removing expired alerts. We intend to replace this section or amend existing sections with more informative feedback about the status of each feed. This would indicating possible problems to the admin such as connection issues, alert retrieval failure, and format compatibility.
+The 'Feed logs' section displays any issues or exceptions encountered while polling from different feeds. This feature offers very powerful feedback for admins. It describes the context of the problem (which feed and alert), what the exception is, what the exception means, the exact system error message, and possible solutions for the problem. Logs are kept in the system for 2 weeks and can identify connection problems, format problems, and violations of the CAP-v1.2 specification by alerting sources.
 
 ## Installation and Setup
 
-WIP due to upcoming changes to Websockets and Django Channels. More detailed instructions will be added including our Azure deployment process (maybe useful?).
+*It is possible to develop and run a fully functional CAP aggregator on Windows including the Django app, Celery, and Redis using Docker. However, Celery and Redis are not officially supported and certain features such as concurrent Celery workers will not work.*
 
-### Useful Celery Commands
+1. Clone the repository and checkout the main or develop branch.
+    ```
+    git clone https://github.com/IFRC-Alert-Hub/Alert-Hub-CAP-Aggregator.git
+    git checkout develop
+    ```
+2. Set up and activate a virtual environment.  
+    Windows:
+    ```
+    python -m venv venv
+    venv\Scripts\activate
+    ```
+    Linux:
+    ```
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+3. Install packages with pip.
+    ```
+    pip install -r requirements.txt
+    ```
+4. Setup a PostGreSQL database and check it works.  
+    Linux:
+    ```
+    sudo apt install postgresql postgresql-contrib
+    sudo passwd postgres
+    sudo service postgresql start
+    sudo -u postgres psql
+    create database cap-aggregator;
+
+    sudo service postgresql status
+    ```
+5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
+    Example:
+    ```
+    DBNAME=cap-aggregator
+    DBHOST=localhost
+    DBUSER=username
+    DBPASS=1234
+    SECRET_KEY=d3bt^98*kjp^f&e3+=(0m(vge)6ky+ox76q4gbudy#-2kqkz%c
+    CELERY_BROKER_URL=redis://localhost:6379
+    REDIS_URL=redis://localhost:6379
+    ```
+6. Verify the progress so far by running some tests successfully.
+    ```
+    python manage.py migrate
+    python manage.py test
+    ```
+7. Setup a Redis server and check it works.  
+    Linux:
+    ```
+    sudo apt install redis-server
+    sudo service redis-server start
+
+    redis-cli ping
+    ```
+8. Add admin credentials and start the Django server.
+    ```
+    python manage.py createsuperuser
+    python manage.py runserver
+    ```
+9. Check the Django app works so far.  
+    Initial geographical data and feeds should be loaded and visible in the feed facade after refreshing the index page.
+
+    Index page: http://127.0.0.1:8000/  
+    Feed facade: http://127.0.0.1:8000/admin/
+10. Start Celery works and the scheduler.  
+    Windows:
+    ```
+    celery -A capaggregator worker -l info --pool=solo
+    celery -A capaggregator beat -l info
+    ```
+    Linux: (-c [concurrent workers])
+    ```
+    celery -A capaggregator worker -l info -c 4
+    celery -A capaggregator beat -l info
+    ```
+11. Alerts are now being aggregated!  
+    Check the index page or feed facade for alert entries.
+
+## Azure Deployment
+*The deploy steps of the CAP aggregator on Azure to communicate with other Alert Hub components.*
+
+The CAP aggregator uses three main Azure components: Web App(App Service), PostgreSQL database (Azure Database for PostgreSQL flexible server), and Redis Cache (Azure Cache for Redis).
+
+1. Create a Web App  
+    Publish: Code  
+    Runtime stack: Python 3.11  
+    Operating System: Linux
+2. Create a PostGreSQL server and Redis Cache  
+    Create a database e.g., 'cap-aggregator'  
+    Create a Redis Cache e.g., 'cap-aggregator' with private endpoint.
+3. Configure the Web App  
+    Under 'Configuration' and 'Application settings' add new application settings
+    ```
+    Name: AZURE_POSTGRESQL_CONNECTIONSTRING
+    Value: dbname={database name} host={server name}.postgres.database.azure.com port=5432 sslmode=require user={username} password={password}
+
+    Name: SCM_DO_BUILD_DURING_DEPLOYMENT
+    Value: 1
+
+    Name: SECRET_KEY
+    Value: {secret_key}
+
+    Name: CELERY_BROKER_URL
+    Value: rediss://:{redis key}=@{dns name}.redis.cache.windows.net:6380/5
+
+    Name: REDIS_URL
+    Value: rediss://:{redis key}=@{dns name}.redis.cache.windows.net:6380/6
+    ```
+    Under 'General settings' add a startup command
+    ```
+    startup.sh
+    ```
+4. Connect Web App to code source  
+    Set GitHub as the source, select the correct branch, and save the automatically generated GitHub Actions workflow.
+5. The Azure deployment should now be linked to the GitHub source and the web app will automatically build and deploy.
+
+You can check on the status of the container at 'Log stream'.  
+Use the SSH console to interact with Celery services and create admin users for the feed facade.
+
+
+### Extra Commands
+*These commands can be useful while troubleshooting, but aren't necessary to deploy the CAP-aggregator.*
+
+Configure number of celery workers in startup.sh according to available core count. For example, '2' for low spec virtual machine, '12' for high spec local machine.
+```
+celery -A capaggregator worker -l info -c 2
+```
 
 Inspect active workers
 ```
@@ -75,10 +210,4 @@ Start celery worker and scheduler on deployment:
 ```
 celery multi start w1 -A capaggregator -l info
 celery -A capaggregator beat --detach -l info
-```
-
-Start celery worker and sceduler for local development:
-```
-celery -A capaggregator worker -l info --pool=solo
-celery -A capaggregator beat -l info
 ```

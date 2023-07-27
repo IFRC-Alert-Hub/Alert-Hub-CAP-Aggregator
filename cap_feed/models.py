@@ -53,14 +53,15 @@ class Feed(models.Model):
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
     atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
     cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
+    notes = models.TextField(blank=True, default='')
     
-    __previous_polling_interval = None
-    __previous_url = None
+    __old_polling_interval = None
+    __old_url = None
 
     def __init__(self, *args, **kwargs):
         super(Feed, self).__init__(*args, **kwargs)
-        self.__previous_polling_interval = self.polling_interval
-        self.__previous_url = self.url
+        self.__old_polling_interval = self.polling_interval
+        self.__old_url = self.url
 
     def __str__(self):
         name = self.name
@@ -68,9 +69,9 @@ class Feed(models.Model):
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
-            add_feed(self)
+            add_task(self)
         else:
-            update_feed(self, self.__previous_url, self.__previous_polling_interval)
+            update_task(self, self.__old_url, self.__old_polling_interval)
         super(Feed, self).save(force_insert, force_update, *args, **kwargs)
     
 class Alert(models.Model):
@@ -98,7 +99,7 @@ class Alert(models.Model):
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
-    id = models.CharField(primary_key=True, max_length=255)
+    url = models.CharField(max_length=255, unique=True)
 
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
@@ -121,7 +122,7 @@ class Alert(models.Model):
         self.__all_info_added = False
 
     def __str__(self):
-        return self.id
+        return self.url
 
     def info_has_been_added(self):
         self.__all_info_added = True
@@ -132,7 +133,7 @@ class Alert(models.Model):
     # This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
         alert_dict = dict()
-        alert_dict['id'] = self.id
+        alert_dict['url'] = self.url
         alert_dict['identifier'] = self.identifier
         #alert_dict['sender'] = self.sender
         #alert_dict['sent'] = str(self.sent)
@@ -162,7 +163,7 @@ class Alert(models.Model):
     def alert_to_be_transferred_to_dict(self):
         alert_dict = dict()
         #What is the difference between id and identifier?
-        alert_dict['id'] = self.id
+        alert_dict['url'] = self.url
         alert_dict['country_name'] = self.country.name
         alert_dict['country_id'] = self.country.id
         alert_dict['feed_url'] = self.feed.url
@@ -416,80 +417,52 @@ class FeedLog(models.Model):
     error_message = models.TextField(default='')
     description = models.TextField(default='')
     response = models.TextField(default='')
-    alert_id = models.CharField(max_length=255, blank=True, default='')
+    alert_url = models.CharField(max_length=255, blank=True, default='')
     timestamp = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True, default='')
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['alert_id', 'description'], name="unique_alert_error"),
+            models.UniqueConstraint(fields=['alert_url', 'description'], name="unique_alert_error"),
         ]
 
     def save(self, *args, **kwargs):
+        FeedLog.objects.filter(feed=self.feed, timestamp__lt=timezone.now() - timedelta(weeks=2)).delete()
         try:
             super(FeedLog, self).save(*args, **kwargs)
         except IntegrityError:
             pass
 
-# Adds feed to a periodic task
-def add_feed(feed):
+# Add task to poll feed
+def add_task(feed):
     interval = feed.polling_interval
     interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
     if interval_schedule is None:
         interval_schedule = IntervalSchedule.objects.create(every=interval, period='seconds')
         interval_schedule.save()
-    alert_tasks = PeriodicTask.objects.filter(task='cap_feed.tasks.poll_new_alerts')
-    existing_task = None
-    for alert_task in alert_tasks:
-        if alert_task.interval.every == interval and alert_task.interval.period == 'seconds':
-            existing_task = alert_task
-            break
-    # If there is no task with the same interval, create a new one
-    if existing_task is None:
-        try:
-            new_task = PeriodicTask.objects.create(
-                interval = interval_schedule,
-                name = 'poll_new_alerts_' + str(interval) + '_seconds',
-                task = 'cap_feed.tasks.poll_new_alerts',
-                start_time = timezone.now(),
-                kwargs = json.dumps({"feeds": [feed.url]}),
-            )
-            new_task.save()
-        except Exception as e:
-            print('Error adding new periodic task', e)
-    # If there is a task with the same interval, add the feed to the task
-    else:
-        kwargs = json.loads(existing_task.kwargs)
-        kwargs["feeds"].append(feed.url)
-        existing_task.kwargs = json.dumps(kwargs)
-        existing_task.save()
+    # Create a new PeriodicTask
+    try:
+        new_task = PeriodicTask.objects.create(
+            interval = interval_schedule,
+            name = 'poll_feed_' + feed.url,
+            task = 'cap_feed.tasks.poll_feed',
+            start_time = timezone.now(),
+            kwargs = json.dumps({"url": feed.url}),
+        )
+        new_task.save()
+    except Exception as e:
+        print('Error while adding new PeriodicTask', e)
 
-# Removes feed from a periodic task
-def remove_feed(feed):
-    interval = feed.polling_interval
-    interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
-    existing_task = PeriodicTask.objects.filter(interval=interval_schedule, task="cap_feed.tasks.poll_new_alerts").first()
-    # If there is no task with the same interval, thats a problem
-    if existing_task is None:
-        print("There is no periodic task with the same interval")
-    # If there is a task with the same interval, remove the feed from the task
-    else:
-        kwargs = json.loads(existing_task.kwargs)
-        if feed.url in kwargs["feeds"]:
-            kwargs["feeds"].remove(feed.url)
-        existing_task.kwargs = json.dumps(kwargs)
-        existing_task.save()
-        if not kwargs["feeds"]:
-            existing_task.delete()
+# Removes task to poll feed
+def remove_task(feed):
+    try:
+        existing_task = PeriodicTask.objects.get(name='poll_feed_' + feed.url)
+        existing_task.delete()
+    except PeriodicTask.DoesNotExist as e:
+        print('Error while removing unknown PeriodicTask', e)
 
-def update_feed(feed, previous_url, previous_interval):
-    # Remove the feed with old configurations
-    new_url = feed.url
-    new_interval = feed.polling_interval
-    feed.url = previous_url
-    feed.polling_interval = previous_interval
-    # Remove entry from database
-    feed.delete()
-    # Add the updated feed again
-    feed.url = new_url
-    feed.polling_interval = new_interval
-    add_feed(feed)
+# Update task to poll feed
+def update_task(feed, old_url, old_interval):
+    if feed.url != old_url or feed.polling_interval != old_interval:
+        remove_task(feed)
+        add_task(feed)
