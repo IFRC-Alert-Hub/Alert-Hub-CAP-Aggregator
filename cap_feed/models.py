@@ -33,6 +33,15 @@ class Country(models.Model):
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
+    
+class District(models.Model):
+    name = models.CharField(max_length=255)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    polygon = models.TextField(blank=True, default='')
+    multipolygon = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return self.name
 
 class Feed(models.Model):
     INTERVAL_CHOICES = []

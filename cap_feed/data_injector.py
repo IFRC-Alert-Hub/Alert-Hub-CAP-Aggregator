@@ -1,7 +1,7 @@
 import os
 import json
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Alert, Continent, Region, Country, Feed
+from .models import Alert, Continent, Region, Country, District, Feed
 from cap_feed.formats import format_handler as fh
 
 
@@ -14,6 +14,8 @@ def inject_geographical_data():
         inject_regions()
     if Country.objects.count() == 0:
         inject_countries()
+    if District.objects.count() == 0:
+        inject_districts()
 
 # inject continent data
 def inject_continents():
@@ -101,6 +103,27 @@ def inject_countries():
 
                 country.save()
             processed_iso3.add(country.iso3)
+
+# inject district data
+def inject_districts():
+    file_path = os.path.join(module_dir, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
+    with open(file_path, encoding='utf-8') as f:
+        data = json.load(f)
+        for feature in data['features']:
+            district = District()
+            if 'shapeName' in feature['properties']:
+                district.name = feature['properties']['shapeName']
+                iso3 = feature['properties']['shapeGroup']
+                country = Country.objects.filter(iso3 = iso3).first()
+                if country:
+                    district.country = country
+                    coordinates = feature['geometry']['coordinates']
+                    if len(coordinates) == 1:
+                        district.polygon = coordinates
+                    else:
+                        district.multipolygon = coordinates
+                    
+                    district.save()
 
 # inject feed configurations if not already present
 def inject_feeds():
