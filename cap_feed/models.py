@@ -39,6 +39,10 @@ class District(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     polygon = models.TextField(blank=True, default='')
     multipolygon = models.TextField(blank=True, default='')
+    min_latitude = models.FloatField(blank=True, null=True)
+    max_latitude = models.FloatField(blank=True, null=True)
+    min_longitude = models.FloatField(blank=True, null=True)
+    max_longitude = models.FloatField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -107,6 +111,7 @@ class Alert(models.Model):
     ]
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    districts = models.ManyToManyField(District, through='AlertDistrict')
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     url = models.CharField(max_length=255, unique=True)
 
@@ -190,6 +195,10 @@ class Alert(models.Model):
         alert_dict['info'] = info_list
 
         return alert_dict
+    
+class AlertDistrict(models.Model):
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
+    district = models.ForeignKey(District, on_delete=models.CASCADE)
 
 class AlertCacheEncoder(json.JSONEncoder):
     def default(self, obj):
