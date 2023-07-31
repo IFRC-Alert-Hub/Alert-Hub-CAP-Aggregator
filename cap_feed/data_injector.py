@@ -10,12 +10,16 @@ from cap_feed.formats import format_handler as fh
 # inject region and country data if not already present
 def inject_geographical_data():
     if Continent.objects.count() == 0:
+        print('Injecting continents...')
         inject_continents()
     if Region.objects.count() == 0:
+        print('Injecting regions...')
         inject_regions()
     if Country.objects.count() == 0:
+        print('Injecting countries...')
         inject_countries()
     if District.objects.count() == 0:
+        print('Injecting districts...')
         inject_districts()
 
 # inject continent data
@@ -122,11 +126,11 @@ def inject_districts():
             coordinates = feature['geometry']['coordinates']
             type = feature['geometry']['type']
             if type == 'Polygon':
-                district.polygon = json.dumps({'coordinates' : coordinates[0]})
+                district.polygon = json.dumps({'coordinates' : coordinates})
                 district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = Polygon(coordinates[0]).bounds
             elif type == 'MultiPolygon':
-                district.multipolygon = json.dumps({'coordinates' : coordinates[0]})
-                polygons = [Polygon(x) for x in coordinates[0]]
+                district.multipolygon = json.dumps({'coordinates' : coordinates})
+                polygons = [Polygon(x[0]) for x in coordinates]
                 district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = MultiPolygon(polygons).bounds
             district.save()
 
