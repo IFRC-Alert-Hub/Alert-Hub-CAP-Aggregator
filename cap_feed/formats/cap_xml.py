@@ -1,7 +1,9 @@
-from cap_feed.models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
+import json
+from cap_feed.models import District, AlertDistrict, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
 from django.utils import timezone
 from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror
+from shapely.geometry import Polygon, MultiPolygon
 
 
 
@@ -74,11 +76,34 @@ def get_alert(url, alert_root, feed, ns):
                 alert_info_area.save()
 
                 # navigate alert info area polygon
+                polygons = []
                 for alert_info_area_polygon_entry in alert_info_area_entry.findall('cap:polygon', ns):
                     alert_info_area_polygon = AlertInfoAreaPolygon()
                     alert_info_area_polygon.alert_info_area = alert_info_area
                     alert_info_area_polygon.value = alert_info_area_polygon_entry.text
                     alert_info_area_polygon.save()
+                    points = [point.split(',') for point in alert_info_area_polygon_entry.text.split(' ')]
+                    polygons.append(Polygon([[point[1],point[0]] for point in points]))
+
+                # check polygon intersection with districts
+                for polygon in polygons:
+                    (min_longitude, min_latitude, max_longitude, max_latitude) = polygon.bounds
+                    possible_districts = District.objects.filter(country = alert.country, min_longitude__lte=max_longitude, max_longitude__gte=min_longitude, min_latitude__lte=max_latitude, max_latitude__gte=min_latitude)
+                    
+                    for district in possible_districts:
+                        district_polygon = None
+                        if not district.polygon == '':
+                            polygon_dict = json.loads(district.polygon)['coordinates'][0]
+                            district_polygon = Polygon(polygon_dict)
+                        elif not district.multipolygon == '':
+                            multipolygon_dict = json.loads(district.multipolygon)['coordinates']
+                            polygons = [Polygon(x[0]) for x in multipolygon_dict]
+                            district_polygon = MultiPolygon(polygons)
+                        if district_polygon.intersects(polygon):
+                            alert_district = AlertDistrict()
+                            alert_district.alert = alert
+                            alert_district.district = district
+                            alert_district.save()
 
                 # navigate alert info area circle
                 for alert_info_area_circle_entry in alert_info_area_entry.findall('cap:circle', ns):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, District, Feed, FeedLog
+from .models import Alert, AlertInfo, AlertDistrict, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, District, Feed, FeedLog
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule
 from django_celery_results.models import GroupResult
 
@@ -65,7 +65,10 @@ class FeedLogAdmin(admin.ModelAdmin):
         ("Log Details" , {"fields": ["exception", "error_message", "description", "response"]}),
     ]
 
-
+class AlertDistrictAdmin(admin.ModelAdmin):
+    list_display = ["alert", "district"]
+    list_filter = ["alert__country", "district"]
+    search_fields = ["alert__url", "district__name"]
 
 admin.site.register(Alert, AlertAdmin)
 #admin.site.register(AlertInfo, AlertInfoAdmin)
@@ -78,6 +81,7 @@ admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
 admin.site.register(District, DistrictAdmin)
+admin.site.register(AlertDistrict, AlertDistrictAdmin)
 admin.site.register(Feed, FeedAdmin)
 admin.site.register(FeedLog, FeedLogAdmin)
 

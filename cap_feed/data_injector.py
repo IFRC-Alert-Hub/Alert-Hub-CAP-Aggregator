@@ -1,5 +1,6 @@
 import os
 import json
+from shapely.geometry import Polygon, MultiPolygon
 module_dir = os.path.dirname(__file__)  # get current directory
 from .models import Alert, Continent, Region, Country, District, Feed
 from cap_feed.formats import format_handler as fh
@@ -9,12 +10,16 @@ from cap_feed.formats import format_handler as fh
 # inject region and country data if not already present
 def inject_geographical_data():
     if Continent.objects.count() == 0:
+        print('Injecting continents...')
         inject_continents()
     if Region.objects.count() == 0:
+        print('Injecting regions...')
         inject_regions()
     if Country.objects.count() == 0:
+        print('Injecting countries...')
         inject_countries()
     if District.objects.count() == 0:
+        print('Injecting districts...')
         inject_districts()
 
 # inject continent data
@@ -86,22 +91,21 @@ def inject_countries():
             status = feature['properties']['status']
             if status == 'Occupied Territory (under review)' or status == 'PT Territory':
                     continue
-            if (country.iso3 in ifrc_countries):
-                country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
-                country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
-                coordinates = feature['geometry']['coordinates']
-                if len(coordinates) == 1:
-                    country.polygon = coordinates
-                else:
-                    country.multipolygon = coordinates
-                
-                latitude = feature['properties']['geo_point_2d']['lat']
-                longitude = feature['properties']['geo_point_2d']['lon']
-                country.centroid = f'[{longitude}, {latitude}]'
+            if not country.iso3 in ifrc_countries:
+                continue
+            country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
+            country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
+            coordinates = feature['geometry']['coordinates']
+            if len(coordinates) == 1:
+                country.polygon = coordinates
+            else:
+                country.multipolygon = coordinates
+            
+            latitude = feature['properties']['geo_point_2d']['lat']
+            longitude = feature['properties']['geo_point_2d']['lon']
+            country.centroid = f'[{longitude}, {latitude}]'
 
-                #"properties":{"geo_point_2d":{"lon":31.49752845618843,"lat":-26.562642190929807},
-
-                country.save()
+            country.save()
             processed_iso3.add(country.iso3)
 
 # inject district data
@@ -111,19 +115,24 @@ def inject_districts():
         data = json.load(f)
         for feature in data['features']:
             district = District()
-            if 'shapeName' in feature['properties']:
-                district.name = feature['properties']['shapeName']
-                iso3 = feature['properties']['shapeGroup']
-                country = Country.objects.filter(iso3 = iso3).first()
-                if country:
-                    district.country = country
-                    coordinates = feature['geometry']['coordinates']
-                    if len(coordinates) == 1:
-                        district.polygon = coordinates
-                    else:
-                        district.multipolygon = coordinates
-                    
-                    district.save()
+            if not 'shapeName' in feature['properties']:
+                continue
+            district.name = feature['properties']['shapeName']
+            iso3 = feature['properties']['shapeGroup']
+            country = Country.objects.filter(iso3 = iso3).first()
+            if not country:
+                continue
+            district.country = country
+            coordinates = feature['geometry']['coordinates']
+            type = feature['geometry']['type']
+            if type == 'Polygon':
+                district.polygon = json.dumps({'coordinates' : coordinates})
+                district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = Polygon(coordinates[0]).bounds
+            elif type == 'MultiPolygon':
+                district.multipolygon = json.dumps({'coordinates' : coordinates})
+                polygons = [Polygon(x[0]) for x in coordinates]
+                district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = MultiPolygon(polygons).bounds
+            district.save()
 
 # inject feed configurations if not already present
 def inject_feeds():
