@@ -1,28 +1,33 @@
 import os
 import json
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Alert, Continent, Region, Country, District, Feed
+from .models import Continent, Region, Country, District, Feed
 
 
 
 # inject region and country data if not already present
 def inject_geographical_data():
+    static_path = module_dir
+    if 'WEBSITE_HOSTNAME' in os.environ:
+        from capaggregator.production import MEDIA_URL
+        static_path = MEDIA_URL
+
     if Continent.objects.count() == 0:
         print('Injecting continents...')
-        inject_continents()
+        inject_continents(static_path)
     if Region.objects.count() == 0:
         print('Injecting regions...')
-        inject_regions()
+        inject_regions(static_path)
     if Country.objects.count() == 0:
         print('Injecting countries...')
-        inject_countries()
+        inject_countries(static_path)
     if District.objects.count() == 0:
         print('Injecting districts...')
-        inject_districts()
+        inject_districts(static_path)
 
 # inject continent data
-def inject_continents():
-    file_path = os.path.join(module_dir, 'geographical/continents.json')
+def inject_continents(static_path):
+    file_path = os.path.join(static_path, 'geographical/continents.json')
     with open(file_path) as file:
         continent_data = json.load(file)
         for continent_entry in continent_data:
@@ -31,8 +36,8 @@ def inject_continents():
             continent.save()
 
 # inject continent data
-def inject_continents():
-    file_path = os.path.join(module_dir, 'geographical/continents.json')
+def inject_continents(static_path):
+    file_path = os.path.join(static_path, 'geographical/continents.json')
     with open(file_path) as file:
         continent_data = json.load(file)
         for continent_entry in continent_data:
@@ -42,8 +47,8 @@ def inject_continents():
             continent.save()
 
 # inject region data
-def inject_regions():
-    file_path = os.path.join(module_dir, 'geographical/ifrc-regions.json')
+def inject_regions(static_path):
+    file_path = os.path.join(static_path, 'geographical/ifrc-regions.json')
     with open(file_path) as file:
         region_data = json.load(file)
         for region_entry in region_data:
@@ -56,9 +61,9 @@ def inject_regions():
             region.save()
 
 # inject country data
-def inject_countries():
+def inject_countries(static_path):
     region_names = {}
-    file_path = os.path.join(module_dir, 'geographical/ifrc-regions.json')
+    file_path = os.path.join(static_path, 'geographical/ifrc-regions.json')
     with open(file_path) as file:
         region_data = json.load(file)
         for region_entry in region_data:
@@ -67,7 +72,7 @@ def inject_countries():
             region_names[region_id] = name
 
     ifrc_countries = {}
-    file_path = os.path.join(module_dir, 'geographical/ifrc-countries-and-territories.json')
+    file_path = os.path.join(static_path, 'geographical/ifrc-countries-and-territories.json')
     with open(file_path) as file:
         country_data = json.load(file)
         for feature in country_data:
@@ -79,7 +84,7 @@ def inject_countries():
             ifrc_countries[iso3] = region_names[region_id]
     
     processed_iso3 = set()
-    file_path = os.path.join(module_dir, 'geographical/opendatasoft-countries-and-territories.geojson')
+    file_path = os.path.join(static_path, 'geographical/opendatasoft-countries-and-territories.geojson')
     with open(file_path) as file:
         country_data = json.load(file)
         for feature in country_data['features']:
@@ -108,8 +113,8 @@ def inject_countries():
             processed_iso3.add(country.iso3)
 
 # inject district data
-def inject_districts():
-    file_path = os.path.join(module_dir, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
+def inject_districts(static_path):
+    file_path = os.path.join(static_path, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
     with open(file_path, encoding='utf-8') as f:
         data = json.load(f)
         for feature in data['features']:
