@@ -187,19 +187,19 @@ def inject_feeds():
         print('Injecting feeds...')
         # this could be converted to a fixture
         feed_data = [
-            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
-            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
-            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
-            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
-            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
-            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
-            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
-            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
-            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
-            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "atom"),
+            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "atom"),
+            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "atom"),
+            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "atom"),
+            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "atom"),
+            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "rss"),
+            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "rss"),
+            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "rss"),
+            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "rss"),
+            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "rss"),
             ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
-            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
-            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
+            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "atom"),
+            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "rss"),
         ]
 
         for feed_entry in feed_data:

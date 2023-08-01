@@ -64,10 +64,9 @@ class Feed(models.Model):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     FORMAT_CHOICES = [
-        ('meteoalarm', 'meteoalarm'),
-        ('aws', 'aws'),
-        ('nws_us', 'nws_us'),
-        ('meteo_ru', 'meteo_ru')
+        ('atom', 'atom'),
+        ('rss', 'rss'),
+        ('nws_us', 'nws_us')
     ]
     name = models.CharField(max_length=255)
     url = models.CharField(primary_key=True, max_length=255)

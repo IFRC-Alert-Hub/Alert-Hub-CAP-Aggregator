@@ -1,8 +1,8 @@
 import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template import loader
-from .models import Alert
+from .models import Alert, Feed
 
 from cap_feed.tasks import inject_data
 import cap_feed.alert_cache as ac
@@ -28,3 +28,19 @@ def reset_template(request):
 
 def get_alerts(request):
     return HttpResponse(ac.get_all_alerts())
+
+def get_feeds(request):
+    feeds = Feed.objects.all()
+    response = {'sources' : []}
+    for feed in feeds:
+        response['sources'].append(
+            {'source' : {
+                'name': feed.name,
+                'sourceIsOfficial' : True,
+                'capAlertFeed': feed.url,
+                'capAlertFeedStatus': 'testing',
+                'authorityCountry' : feed.country.iso3,
+                }
+            }
+        )
+    return JsonResponse(response, json_dumps_params={'indent': 2, 'ensure_ascii': False})
