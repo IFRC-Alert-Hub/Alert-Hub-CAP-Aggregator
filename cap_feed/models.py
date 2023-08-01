@@ -60,8 +60,7 @@ class District(models.Model):
 
 class Feed(models.Model):
     INTERVAL_CHOICES = []
-    # [10, 45, 60, 75, 90, 105, 120]
-    for interval in range(10, 130, 10):
+    for interval in range(10, 60, 5):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     FORMAT_CHOICES = [

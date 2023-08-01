@@ -1,9 +1,7 @@
 import os
 import json
-from shapely.geometry import Polygon, MultiPolygon
 module_dir = os.path.dirname(__file__)  # get current directory
 from .models import Alert, Continent, Region, Country, District, Feed
-from cap_feed.formats import format_handler as fh
 
 
 
@@ -96,9 +94,10 @@ def inject_countries():
             country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
             country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
             coordinates = feature['geometry']['coordinates']
-            if len(coordinates) == 1:
+            type = feature['geometry']['type']
+            if type == 'Polygon':
                 country.polygon = coordinates
-            else:
+            elif type == 'MultiPolygon':
                 country.multipolygon = coordinates
             
             latitude = feature['properties']['geo_point_2d']['lat']
@@ -115,11 +114,13 @@ def inject_districts():
         data = json.load(f)
         for feature in data['features']:
             district = District()
+            # Skip unparsable features
             if not 'shapeName' in feature['properties']:
                 continue
             district.name = feature['properties']['shapeName']
             iso3 = feature['properties']['shapeGroup']
             country = Country.objects.filter(iso3 = iso3).first()
+            # Skip ISO3 codes that do not match existing countries
             if not country:
                 continue
             district.country = country
@@ -134,7 +135,7 @@ def inject_districts():
 # inject feed configurations if not already present
 def inject_feeds():
     if Feed.objects.count() == 0:
-        print('Injecting districts...')
+        print('Injecting feeds...')
         # this could be converted to a fixture
         feed_data = [
             ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
@@ -153,10 +154,13 @@ def inject_feeds():
         ]
 
         for feed_entry in feed_data:
-            feed = Feed()
-            feed.name = feed_entry[0]
-            feed.url = feed_entry[1]
-            feed.polling_interval = 60
-            feed.country = Country.objects.get(iso3 = feed_entry[2])
-            feed.format = feed_entry[3]
-            feed.save()
+            try:
+                feed = Feed()
+                feed.name = feed_entry[0]
+                feed.url = feed_entry[1]
+                feed.polling_interval = 60
+                feed.country = Country.objects.get(iso3 = feed_entry[2])
+                feed.format = feed_entry[3]
+                feed.save()
+            except Exception as e:
+                print(f'Error injecting feed {feed.name}: {e}')
