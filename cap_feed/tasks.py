@@ -28,6 +28,5 @@ def remove_expired_alerts(self):
 @shared_task(bind=True)
 def inject_data(self):
     dl.inject_geographical_data()
-    if Feed.objects.count() == 0:
-        dl.inject_feeds()
+    dl.inject_feeds()
     return f"injected data"
