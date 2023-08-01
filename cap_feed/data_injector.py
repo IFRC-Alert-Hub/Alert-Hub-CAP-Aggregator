@@ -1,19 +1,24 @@
 import os
 import json
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Alert, Continent, Region, Country, Feed
-from cap_feed.formats import format_handler as fh
+from .models import Alert, Continent, Region, Country, District, Feed
 
 
 
 # inject region and country data if not already present
 def inject_geographical_data():
     if Continent.objects.count() == 0:
+        print('Injecting continents...')
         inject_continents()
     if Region.objects.count() == 0:
+        print('Injecting regions...')
         inject_regions()
     if Country.objects.count() == 0:
+        print('Injecting countries...')
         inject_countries()
+    if District.objects.count() == 0:
+        print('Injecting districts...')
+        inject_districts()
 
 # inject continent data
 def inject_continents():
@@ -84,48 +89,78 @@ def inject_countries():
             status = feature['properties']['status']
             if status == 'Occupied Territory (under review)' or status == 'PT Territory':
                     continue
-            if (country.iso3 in ifrc_countries):
-                country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
-                country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
-                coordinates = feature['geometry']['coordinates']
-                if len(coordinates) == 1:
-                    country.polygon = coordinates
-                else:
-                    country.multipolygon = coordinates
-                
-                latitude = feature['properties']['geo_point_2d']['lat']
-                longitude = feature['properties']['geo_point_2d']['lon']
-                country.centroid = f'[{longitude}, {latitude}]'
+            if not country.iso3 in ifrc_countries:
+                continue
+            country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
+            country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
+            coordinates = feature['geometry']['coordinates']
+            type = feature['geometry']['type']
+            if type == 'Polygon':
+                country.polygon = coordinates
+            elif type == 'MultiPolygon':
+                country.multipolygon = coordinates
+            
+            latitude = feature['properties']['geo_point_2d']['lat']
+            longitude = feature['properties']['geo_point_2d']['lon']
+            country.centroid = f'[{longitude}, {latitude}]'
 
-                #"properties":{"geo_point_2d":{"lon":31.49752845618843,"lat":-26.562642190929807},
-
-                country.save()
+            country.save()
             processed_iso3.add(country.iso3)
+
+# inject district data
+def inject_districts():
+    file_path = os.path.join(module_dir, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
+    with open(file_path, encoding='utf-8') as f:
+        data = json.load(f)
+        for feature in data['features']:
+            district = District()
+            # Skip unparsable features
+            if not 'shapeName' in feature['properties']:
+                continue
+            district.name = feature['properties']['shapeName']
+            iso3 = feature['properties']['shapeGroup']
+            country = Country.objects.filter(iso3 = iso3).first()
+            # Skip ISO3 codes that do not match existing countries
+            if not country:
+                continue
+            district.country = country
+            coordinates = feature['geometry']['coordinates']
+            type = feature['geometry']['type']
+            if type == 'Polygon':
+                district.polygon = json.dumps({'coordinates' : coordinates})
+            elif type == 'MultiPolygon':
+                district.multipolygon = json.dumps({'coordinates' : coordinates})
+            district.save()
 
 # inject feed configurations if not already present
 def inject_feeds():
-    # this could be converted to a fixture
-    feed_data = [
-        ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
-        ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
-        ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
-        ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
-        ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
-        ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
-        ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
-        ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
-        ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
-        ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
-        ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
-        ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
-        ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
-    ]
+    if Feed.objects.count() == 0:
+        print('Injecting feeds...')
+        # this could be converted to a fixture
+        feed_data = [
+            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
+            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
+            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
+            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
+            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
+            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
+            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
+            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
+            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
+            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+            ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
+            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
+            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
+        ]
 
-    for feed_entry in feed_data:
-        feed = Feed()
-        feed.name = feed_entry[0]
-        feed.url = feed_entry[1]
-        feed.polling_interval = 60
-        feed.country = Country.objects.get(iso3 = feed_entry[2])
-        feed.format = feed_entry[3]
-        feed.save()
+        for feed_entry in feed_data:
+            try:
+                feed = Feed()
+                feed.name = feed_entry[0]
+                feed.url = feed_entry[1]
+                feed.polling_interval = 60
+                feed.country = Country.objects.get(iso3 = feed_entry[2])
+                feed.format = feed_entry[3]
+                feed.save()
+            except Exception as e:
+                print(f'Error injecting feed {feed.name}: {e}')

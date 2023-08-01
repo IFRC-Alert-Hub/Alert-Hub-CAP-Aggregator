@@ -1,23 +1,19 @@
 import json
 
-import cap_feed.data_injector as dl
 from django.http import HttpResponse
 from django.template import loader
-from .models import Alert, Feed
-from django.shortcuts import render
+from .models import Alert
 
+from cap_feed.tasks import inject_data
 import cap_feed.alert_cache as ac
 
 
 
 def index(request):
     try:
-        dl.inject_geographical_data()
-        if Feed.objects.count() == 0:
-            dl.inject_feeds()
-    except Exception as e:
-        print(e)
-        return HttpResponse(f"Error while injecting data {e}")
+        inject_data.delay()
+    except:
+        print('Celery not running')
 
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")

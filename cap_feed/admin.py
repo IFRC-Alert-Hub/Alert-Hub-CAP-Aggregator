@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, Feed, FeedLog
-from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule
-from django_celery_results.models import GroupResult
+from .models import Alert, AlertInfo, AlertDistrict, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, District, Feed, FeedLog
+from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule, PeriodicTask
+from django_celery_results.models import TaskResult, GroupResult
 
 class AlertInfoAreaGeocodeAdmin(admin.ModelAdmin):
     list_display = ["alert_info_area", "value_name", "value"]
@@ -46,6 +46,11 @@ class CountryAdmin(admin.ModelAdmin):
     list_filter = ["region", "continent"]
     search_fields = ["name", "iso3"]
 
+class DistrictAdmin(admin.ModelAdmin):
+    list_display = ["name", "country"]
+    list_filter = ["country"]
+    search_fields = ["name"]
+
 class FeedAdmin(admin.ModelAdmin):
     list_display = ["name", "country", "url", "format", "polling_interval"]
     list_filter = ["format", "polling_interval"]
@@ -60,7 +65,10 @@ class FeedLogAdmin(admin.ModelAdmin):
         ("Log Details" , {"fields": ["exception", "error_message", "description", "response"]}),
     ]
 
-
+class AlertDistrictAdmin(admin.ModelAdmin):
+    list_display = ["alert", "district"]
+    list_filter = ["alert__country", "district"]
+    search_fields = ["alert__url", "district__name"]
 
 admin.site.register(Alert, AlertAdmin)
 #admin.site.register(AlertInfo, AlertInfoAdmin)
@@ -72,11 +80,15 @@ admin.site.register(Alert, AlertAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
+admin.site.register(District, DistrictAdmin)
+admin.site.register(AlertDistrict, AlertDistrictAdmin)
 admin.site.register(Feed, FeedAdmin)
 admin.site.register(FeedLog, FeedLogAdmin)
 
+admin.site.unregister(TaskResult)
 admin.site.unregister(GroupResult)
 admin.site.unregister(CrontabSchedule)
 admin.site.unregister(ClockedSchedule)
 admin.site.unregister(SolarSchedule)
 admin.site.unregister(IntervalSchedule)
+admin.site.unregister(PeriodicTask)
