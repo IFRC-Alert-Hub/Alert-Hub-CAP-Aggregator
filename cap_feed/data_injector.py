@@ -1,9 +1,7 @@
 import os
 import json
-from shapely.geometry import Polygon, MultiPolygon
 module_dir = os.path.dirname(__file__)  # get current directory
 from .models import Alert, Continent, Region, Country, District, Feed
-from cap_feed.formats import format_handler as fh
 
 
 
@@ -96,9 +94,10 @@ def inject_countries():
             country.region = Region.objects.filter(name = ifrc_countries[country.iso3]).first()
             country.continent = Continent.objects.filter(name = feature['properties']['continent']).first()
             coordinates = feature['geometry']['coordinates']
-            if len(coordinates) == 1:
+            type = feature['geometry']['type']
+            if type == 'Polygon':
                 country.polygon = coordinates
-            else:
+            elif type == 'MultiPolygon':
                 country.multipolygon = coordinates
             
             latitude = feature['properties']['geo_point_2d']['lat']
@@ -115,11 +114,13 @@ def inject_districts():
         data = json.load(f)
         for feature in data['features']:
             district = District()
+            # Skip unparsable features
             if not 'shapeName' in feature['properties']:
                 continue
             district.name = feature['properties']['shapeName']
             iso3 = feature['properties']['shapeGroup']
             country = Country.objects.filter(iso3 = iso3).first()
+            # Skip ISO3 codes that do not match existing countries
             if not country:
                 continue
             district.country = country
@@ -127,37 +128,39 @@ def inject_districts():
             type = feature['geometry']['type']
             if type == 'Polygon':
                 district.polygon = json.dumps({'coordinates' : coordinates})
-                district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = Polygon(coordinates[0]).bounds
             elif type == 'MultiPolygon':
                 district.multipolygon = json.dumps({'coordinates' : coordinates})
-                polygons = [Polygon(x[0]) for x in coordinates]
-                district.min_longitude, district.min_latitude, district.max_longitude, district.max_latitude = MultiPolygon(polygons).bounds
             district.save()
 
 # inject feed configurations if not already present
 def inject_feeds():
-    # this could be converted to a fixture
-    feed_data = [
-        ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
-        ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
-        ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
-        ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
-        ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
-        ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
-        ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
-        ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
-        ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
-        ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
-        ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
-        ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
-        ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
-    ]
+    if Feed.objects.count() == 0:
+        print('Injecting feeds...')
+        # this could be converted to a fixture
+        feed_data = [
+            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
+            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
+            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
+            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
+            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
+            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
+            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
+            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
+            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
+            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+            ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
+            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
+            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
+        ]
 
-    for feed_entry in feed_data:
-        feed = Feed()
-        feed.name = feed_entry[0]
-        feed.url = feed_entry[1]
-        feed.polling_interval = 60
-        feed.country = Country.objects.get(iso3 = feed_entry[2])
-        feed.format = feed_entry[3]
-        feed.save()
+        for feed_entry in feed_data:
+            try:
+                feed = Feed()
+                feed.name = feed_entry[0]
+                feed.url = feed_entry[1]
+                feed.polling_interval = 60
+                feed.country = Country.objects.get(iso3 = feed_entry[2])
+                feed.format = feed_entry[3]
+                feed.save()
+            except Exception as e:
+                print(f'Error injecting feed {feed.name}: {e}')

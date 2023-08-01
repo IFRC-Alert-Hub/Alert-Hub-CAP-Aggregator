@@ -5,6 +5,7 @@ from django.db import models, IntegrityError
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from django_celery_beat.models import PeriodicTask
+from shapely.geometry import Polygon, MultiPolygon
 
 
 
@@ -37,20 +38,29 @@ class Country(models.Model):
 class District(models.Model):
     name = models.CharField(max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    polygon = models.TextField(blank=True, default='')
-    multipolygon = models.TextField(blank=True, default='')
-    min_latitude = models.FloatField(blank=True, null=True)
-    max_latitude = models.FloatField(blank=True, null=True)
-    min_longitude = models.FloatField(blank=True, null=True)
-    max_longitude = models.FloatField(blank=True, null=True)
+    polygon = models.TextField(blank=True, null=True)
+    multipolygon = models.TextField(blank=True, null=True)
+    min_latitude = models.FloatField(editable=False, null=True)
+    max_latitude = models.FloatField(editable=False, null=True)
+    min_longitude = models.FloatField(editable=False, null=True)
+    max_longitude = models.FloatField(editable=False, null=True)
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        if self.polygon:
+            polygon = json.loads(self.polygon)['coordinates'][0]
+            self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = Polygon(polygon).bounds
+        elif self.multipolygon:
+            polygon_list = json.loads(self.multipolygon)['coordinates']
+            polygons = [Polygon(x[0]) for x in polygon_list]
+            self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = MultiPolygon(polygons).bounds
+        super(District, self).save(*args, **kwargs)
 
 class Feed(models.Model):
     INTERVAL_CHOICES = []
-    # [10, 45, 60, 75, 90, 105, 120]
-    for interval in range(10, 130, 10):
+    for interval in range(10, 60, 5):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     FORMAT_CHOICES = [
@@ -149,23 +159,9 @@ class Alert(models.Model):
         alert_dict = dict()
         alert_dict['url'] = self.url
         alert_dict['identifier'] = self.identifier
-        #alert_dict['sender'] = self.sender
-        #alert_dict['sent'] = str(self.sent)
-        #alert_dict['status'] = self.status
-        #alert_dict['msg_type'] = self.msg_type
         alert_dict['source'] = self.source
-        #alert_dict['scope'] = self.scope
-        #alert_dict['restriction'] = self.restriction
-        #alert_dict['addresses'] = self.addresses
-        #alert_dict['code'] = self.code
-        #alert_dict['note'] = self.note
-        #alert_dict['references'] = self.references
-        #alert_dict['incidents'] = self.incidents
-        #alert_dict['feed_url'] = self.feed.url
-        #alert_dict['feed_format'] = self.feed.format
         alert_dict['country'] = self.country.name
         alert_dict['iso3'] = self.country.iso3
-        #alert_dict['country_polygon'] = self.country.polygon
 
         info_list = []
         for info in self.info.all():
@@ -176,7 +172,6 @@ class Alert(models.Model):
     # This method will be used for serialization of alert object to be transferred by websocket.
     def alert_to_be_transferred_to_dict(self):
         alert_dict = dict()
-        #What is the difference between id and identifier?
         alert_dict['url'] = self.url
         alert_dict['country_name'] = self.country.name
         alert_dict['country_id'] = self.country.id
@@ -206,7 +201,6 @@ class AlertCacheEncoder(json.JSONEncoder):
             return obj.to_dict()
 
         return super().default(obj)
-
 
 class AlertTransferEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -302,28 +296,14 @@ class AlertInfo(models.Model):
         alert_info_dict['language'] = self.language
         alert_info_dict['category'] = self.category
         alert_info_dict['event'] = self.event
-        #alert_info_dict['response_type'] = self.response_type
         alert_info_dict['urgency'] = self.urgency
         alert_info_dict['severity'] = self.severity
         alert_info_dict['certainty'] = self.certainty
-        #alert_info_dict['audience'] = self.audience
-        #alert_info_dict['event_code'] = self.event_code
-        #alert_info_dict['effective'] = str(self.effective)
-        #alert_info_dict['onset'] = str(self.onset)
         alert_info_dict['expires'] = str(self.expires)
         alert_info_dict['sender_name'] = self.sender_name
         alert_info_dict['headline'] = self.headline
         alert_info_dict['description'] = self.description
         alert_info_dict['instruction'] = self.instruction
-        #alert_info_dict['web'] = self.web
-        #alert_info_dict['contact'] = self.contact
-
-        #parameter_set = self.alertinfoparameter_set.all()
-        #parameter_list = []
-        #for parameter in parameter_set:
-        #    parameter_list.append(parameter.to_dict())
-        #if len(parameter_list) != 0:
-        #    alert_info_dict['parameter'] = parameter_list
 
         area_set = self.alertinfoarea_set.all()
         area_list = []
@@ -333,7 +313,6 @@ class AlertInfo(models.Model):
             alert_info_dict['area'] = area_list
 
         return alert_info_dict
-
 
     def alert_info_to_be_transferred_to_dict(self):
         alert_info_dict = dict()
@@ -355,8 +334,6 @@ class AlertInfoParameter(models.Model):
         alert_info_parameter_dict['value_name'] = self.value_name
         alert_info_parameter_dict['value'] = self.value
         return alert_info_parameter_dict
-
-
 
 class AlertInfoArea(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
