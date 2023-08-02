@@ -90,6 +90,7 @@ class Feed(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
+    official = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default='operating')
     author_name = models.CharField(default='')
     author_email = models.CharField(default='')
