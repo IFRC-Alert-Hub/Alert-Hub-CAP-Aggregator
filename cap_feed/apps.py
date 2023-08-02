@@ -21,12 +21,12 @@ def delete_feed(sender, instance, *args, **kwargs):
 def cache_incoming_alert(sender, instance, *args, **kwargs):
     from capaggregator.celery import app
     if instance.all_info_are_added():
-        app.send_task('alert_cache.tasks.cache_incoming_alert', args=[], kwargs={'alert_id': instance.id},
+        app.send_task('cache.tasks.cache_incoming_alert', args=[], kwargs={'alert_id': instance.id},
                                queue='cache',
                                routing_key='cache.#', exchange='cache')
 
 def cache_removed_alert(sender, instance, *args, **kwargs):
     from capaggregator.celery import app
-    app.send_task('alert_cache.tasks.remove_cached_alert', args=[], kwargs={'alert_id': instance.id},
+    app.send_task('cache.tasks.remove_cached_alert', args=[], kwargs={'alert_id': instance.id},
                             queue='cache',
                             routing_key='cache.#', exchange='cache')
