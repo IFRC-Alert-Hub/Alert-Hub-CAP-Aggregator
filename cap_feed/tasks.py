@@ -11,10 +11,13 @@ import cap_feed.formats.format_handler as fh
 @shared_task(bind=True)
 def poll_feed(self, url):
     polled_alerts_count = 0
-    feed = Feed.objects.get(url=url)
-    # additional persisting alerts to not be deleted, mainly for testing
-    alert_urls = set()
-    polled_alerts_count += fh.get_alerts(feed, alert_urls)
+    try:
+        feed = Feed.objects.get(url=url)
+        # additional persisting alerts to not be deleted, mainly for testing
+        alert_urls = set()
+        polled_alerts_count += fh.get_alerts(feed, alert_urls)
+    except Feed.DoesNotExist:
+        print(f"Feed with url {url} does not exist")
     return f"polled {polled_alerts_count} alerts"
 
 @shared_task(bind=True)

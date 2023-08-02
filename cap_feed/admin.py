@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertDistrict, AlertInfoParameter, AlertInfoArea, AlertInfoAreaGeocode, AlertInfoAreaPolygon, AlertInfoAreaCircle, Continent, Region, Country, District, Feed, FeedLog
+from .models import Alert, AlertInfo, AlertDistrict, Continent, Region, Country, District, LanguageInfo, Feed, FeedLog
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule, PeriodicTask
 from django_celery_results.models import TaskResult, GroupResult
 
@@ -51,10 +51,22 @@ class DistrictAdmin(admin.ModelAdmin):
     list_filter = ["country"]
     search_fields = ["name"]
 
+class MinValidatedInline:
+    validate_min = True
+    def get_formset(self, *args, **kwargs):
+        return super().get_formset(validate_min=self.validate_min, *args, **kwargs)
+
+class LanguageInfoInline(MinValidatedInline, admin.StackedInline):
+    model = LanguageInfo
+    extra = 0
+    min_num = 1
+    validate_min = True
+
 class FeedAdmin(admin.ModelAdmin):
-    list_display = ["name", "country", "url", "format", "polling_interval"]
+    list_display = ["id", "country", "url", "format", "polling_interval"]
     list_filter = ["format", "polling_interval"]
     search_fields = ["url", "country"]
+    inlines = [LanguageInfoInline]
 
 class FeedLogAdmin(admin.ModelAdmin):
     list_display = ["exception", "feed", "description", "alert_url", "timestamp"]

@@ -19,14 +19,21 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware'
 ]
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# WHITENOISE_USE_FINDERS = True
-# WHITENOISE_MANIFEST_STRICT = False
-# WHITENOISE_ALLOW_ALL_ORIGINS = True
+DEFAULT_FILE_STORAGE = 'capaggregator.azure_storage.AzureMediaStorage'
+STATICFILES_STORAGE = 'capaggregator.azure_storage.AzureStaticStorage'
+
+AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = os.getenv('AZURE_ACCOUNT_KEY')
+AZURE_CUSTOM_DOMAIN = f'{AZURE_ACCOUNT_NAME}.blob.core.windows.net'
+
+STATIC_URL = f'https://{AZURE_CUSTOM_DOMAIN}/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+MEDIA_URL = f'https://{AZURE_CUSTOM_DOMAIN}/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 # Configure Postgres database based on connection string of the libpq Keyword/Value form
 # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
