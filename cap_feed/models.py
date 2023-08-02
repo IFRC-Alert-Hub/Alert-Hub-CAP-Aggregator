@@ -6,6 +6,7 @@ from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from django_celery_beat.models import PeriodicTask
 from shapely.geometry import Polygon, MultiPolygon
+from iso639 import Lang, iter_langs
 
 
 
@@ -58,24 +59,41 @@ class District(models.Model):
             self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = MultiPolygon(polygons).bounds
         super(District, self).save(*args, **kwargs)
 
+class LanguageInfo(models.Model):
+    LANGUAGE_CHOICES = [(lg.pt1, lg.pt1 + ' - ' + lg.name) for lg in iter_langs() if lg.pt1]
+
+    feed = models.ForeignKey('Feed', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, default='')
+    language = models.CharField(choices=LANGUAGE_CHOICES, default='en')
+    logo = models.CharField(max_length=255, blank=True, default='')
+
 class Feed(models.Model):
     INTERVAL_CHOICES = []
-    for interval in range(10, 60, 5):
+    for interval in range(5, 65, 5):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     FORMAT_CHOICES = [
-        ('meteoalarm', 'meteoalarm'),
-        ('aws', 'aws'),
-        ('nws_us', 'nws_us'),
-        ('meteo_ru', 'meteo_ru')
+        ('atom', 'atom'),
+        ('rss', 'rss'),
+        ('nws_us', 'nws_us')
     ]
-    name = models.CharField(max_length=255)
+
+    STATUS_CHOICES = {
+        ('operating', 'operating'),
+        ('testing', 'testing'),
+        ('unused', 'unused'),
+        ('unusable', 'unusable')
+    }
+
+    id = models.CharField(max_length=255, unique=True, default='')
     url = models.CharField(primary_key=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
-    atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
-    cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
+    status = models.CharField(choices=STATUS_CHOICES, default='operating')
+    author_name = models.CharField(default='')
+    author_email = models.CharField(default='')
+
     notes = models.TextField(blank=True, default='')
     
     __old_polling_interval = None
@@ -87,8 +105,7 @@ class Feed(models.Model):
         self.__old_url = self.url
 
     def __str__(self):
-        name = self.name
-        return name
+        return self.id
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:

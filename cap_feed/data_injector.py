@@ -2,7 +2,7 @@ import os
 import json
 import requests
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Continent, Region, Country, District, Feed
+from .models import Continent, Region, Country, District, Feed, LanguageInfo
 
 
 
@@ -187,29 +187,40 @@ def inject_feeds():
         print('Injecting feeds...')
         # this could be converted to a fixture
         feed_data = [
-            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "meteoalarm"),
-            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "meteoalarm"),
-            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "meteoalarm"),
-            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "meteoalarm"),
-            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "meteoalarm"),
-            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "aws"),
-            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "aws"),
-            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "aws"),
-            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "aws"),
-            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "aws"),
+            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "atom"),
+            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "atom"),
+            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "atom"),
+            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "atom"),
+            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "atom"),
+            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "rss"),
+            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "rss"),
+            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "rss"),
+            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "rss"),
+            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "rss"),
             ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
-            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "meteo_ru"),
-            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "aws"),
+            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "atom"),
+            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "rss"),
         ]
 
         for feed_entry in feed_data:
             try:
                 feed = Feed()
-                feed.name = feed_entry[0]
+                feed.id = feed_entry[0]
                 feed.url = feed_entry[1]
-                feed.polling_interval = 60
                 feed.country = Country.objects.get(iso3 = feed_entry[2])
                 feed.format = feed_entry[3]
+                feed.polling_interval = 60
+                feed.status = 'operating'
+                feed.author_name = 'Unknown'
+                feed.author_email = 'Unknown'
                 feed.save()
+
+                info = LanguageInfo()
+                info.feed = feed
+                info.name = feed_entry[0]
+                info.language = 'en'
+                info.logo = 'unknown.png'
+                info.save()
+                
             except Exception as e:
-                print(f'Error injecting feed {feed.name}: {e}')
+                print(f'Error injecting feed {feed.id}: {e}')
