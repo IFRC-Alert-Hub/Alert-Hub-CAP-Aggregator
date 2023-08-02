@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
-from .models import Alert, Feed
+from .models import Alert, Feed, LanguageInfo
 
 from cap_feed.tasks import inject_data
 import cap_feed.alert_cache as ac
@@ -33,13 +33,27 @@ def get_feeds(request):
     feeds = Feed.objects.all()
     response = {'sources' : []}
     for feed in feeds:
+
+        language_set = []
+        for info in LanguageInfo.objects.filter(feed=feed):
+            language_set.append(
+                {
+                    'name' : info.name,
+                    'code' : info.language,
+                    'logo' : info.logo
+                }
+            )
+
         response['sources'].append(
             {'source' : {
-                'name': feed.name,
-                'sourceIsOfficial' : True,
+                'sourceId': feed.id,
+                'byLanguage' : language_set,
+                'authorName': feed.author_name,
+                'authorEmail': feed.author_email,
+                'sourceIsOfficial': True,
                 'capAlertFeed': feed.url,
                 'capAlertFeedStatus': 'testing',
-                'authorityCountry' : feed.country.iso3,
+                'authorityCountry': feed.country.iso3,
                 }
             }
         )

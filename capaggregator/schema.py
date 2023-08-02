@@ -48,7 +48,7 @@ class CountryType(DjangoObjectType):
 class FeedType(DjangoObjectType):
     class Meta:
         model = Feed
-        fields = ('name', 'country', 'url')
+        fields = ('id', 'country', 'url')
 
 
 class Query(graphene.ObjectType):

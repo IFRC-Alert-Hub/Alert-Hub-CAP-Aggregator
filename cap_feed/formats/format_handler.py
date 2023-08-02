@@ -18,13 +18,14 @@ def get_alerts(feed, alert_urls):
     #print(f'Alerts in system: {Alert.objects.filter(feed=feed).count()}')
     
     try:
+        ns = {'atom': 'http://www.w3.org/2005/Atom', 'cap': 'urn:oasis:names:tc:emergency:cap:1.2'}
         match feed.format:
             case "atom":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_atom(feed)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_atom(feed, ns)
             case "rss":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_rss(feed)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_rss(feed, ns)
             case "nws_us":
-                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_nws_us(feed)
+                new_alert_urls, polled_alerts_count, valid_poll = get_alerts_nws_us(feed, ns)
             case _:
                 print(f'Format not supported: {feed}')
                 new_alert_urls, polled_alerts_count, valid_poll = set(), 0, True

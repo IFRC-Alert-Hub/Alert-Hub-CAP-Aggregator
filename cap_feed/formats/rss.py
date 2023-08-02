@@ -8,7 +8,7 @@ from cap_feed.formats.utils import log_requestexception, log_attributeerror
 
 
 # processing for rss format, example: https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml
-def get_alerts_rss(feed):
+def get_alerts_rss(feed, ns):
     alert_urls = set()
     polled_alerts_count = 0
     valid_poll = True
@@ -20,7 +20,6 @@ def get_alerts_rss(feed):
         log_requestexception(feed, e, None)
         return alert_urls, polled_alerts_count, valid_poll
     root = ET.fromstring(response.content)
-    ns = {'atom': feed.atom, 'cap': feed.cap}
     for alert_entry in root.find('channel').findall('item'):
         try:
             # skip if alert already exists

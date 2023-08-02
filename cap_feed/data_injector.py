@@ -2,7 +2,7 @@ import os
 import json
 import requests
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Continent, Region, Country, District, Feed
+from .models import Continent, Region, Country, District, Feed, LanguageInfo
 
 
 
@@ -205,11 +205,22 @@ def inject_feeds():
         for feed_entry in feed_data:
             try:
                 feed = Feed()
-                feed.name = feed_entry[0]
+                feed.id = feed_entry[0]
                 feed.url = feed_entry[1]
-                feed.polling_interval = 60
                 feed.country = Country.objects.get(iso3 = feed_entry[2])
                 feed.format = feed_entry[3]
+                feed.polling_interval = 60
+                feed.status = 'operating'
+                feed.author_name = 'Unknown'
+                feed.author_email = 'Unknown'
                 feed.save()
+
+                info = LanguageInfo()
+                info.feed = feed
+                info.name = feed_entry[0]
+                info.language = 'en'
+                info.logo = 'unknown.png'
+                info.save()
+                
             except Exception as e:
-                print(f'Error injecting feed {feed.name}: {e}')
+                print(f'Error injecting feed {feed.id}: {e}')

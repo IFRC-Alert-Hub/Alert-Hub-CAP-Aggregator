@@ -9,7 +9,7 @@ from cap_feed.formats.utils import convert_datetime, log_requestexception, log_a
 
 
 # processing for nws_us format, example: https://api.weather.gov/alerts/active
-def get_alerts_nws_us(feed):
+def get_alerts_nws_us(feed, ns):
     alert_urls = set()
     polled_alerts_count = 0
     valid_poll = True
@@ -22,7 +22,6 @@ def get_alerts_nws_us(feed):
         valid_poll = False
         return alert_urls, polled_alerts_count, valid_poll
     root = ET.fromstring(response.content)
-    ns = {'atom': feed.atom, 'cap': feed.cap}
     for alert_entry in root.findall('atom:entry', ns):
         try:
             # skip if alert is expired or already exists
