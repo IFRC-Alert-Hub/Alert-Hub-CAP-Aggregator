@@ -50,7 +50,7 @@ def get_feeds(request):
                 'byLanguage' : language_set,
                 'authorName': feed.author_name,
                 'authorEmail': feed.author_email,
-                'sourceIsOfficial': True,
+                'sourceIsOfficial': feed.official,
                 'capAlertFeed': feed.url,
                 'capAlertFeedStatus': 'testing',
                 'authorityCountry': feed.country.iso3,
