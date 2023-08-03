@@ -34,11 +34,29 @@ app.autodiscover_tasks()
 app.conf.task_default_queue = 'default'
 app.conf.task_queues = (
     Queue('default', routing_key='poll.#', exchange='poll'),
+    Queue('inject', routing_key='inject.#', exchange='inject'),
 )
 app.conf.task_default_exchange = 'poll'
 app.conf.task_default_exchange_type = 'topic'
 app.conf.task_default_routing_key = 'poll.default'
 
+task_routes = {
+        'cap_feed.tasks.poll_feed': {
+            'queue': 'default',
+            'routing_key': 'poll.#',
+            'exchange' : 'poll',
+        },
+        'cap_feed.tasks.remove_expired_alerts': {
+            'queue': 'default',
+            'routing_key': 'poll.#',
+            'exchange' : 'poll',
+        },
+        'cap_feed.tasks.inject_data': {
+            'queue': 'inject',
+            'routing_key': 'inject.#',
+            'exchange' : 'inject',
+        },
+}
 
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
