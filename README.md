@@ -108,15 +108,13 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     CELERY_BROKER_URL=redis://localhost:6379
     REDIS_URL=redis://localhost:6379
     ```
-6. Prepare geographical data to provide pre-populate the database.  
-    Download the raw files under `cap_feed/geographical` and replace the GitHub LFS references locally.
 
-7. Verify the progress so far by running some tests successfully.
+6. Verify the progress so far by running some tests successfully.
     ```
     python manage.py migrate
     python manage.py test
     ```
-8. Setup a Redis server and check it works.  
+7. Setup a Redis server and check it works.  
     Linux:
     ```
     sudo apt install redis-server
@@ -124,17 +122,17 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
 
     redis-cli ping
     ```
-9. Add admin credentials and start the Django server.
+8. Add admin credentials and start the Django server.
     ```
     python manage.py createsuperuser
     python manage.py runserver
     ```
-10. Check the Django app works so far.  
+9. Check the Django app works so far.  
     Initial geographical data and feeds should be loaded and visible in the feed facade after refreshing the index page.
 
     Index page: http://127.0.0.1:8000/  
     Feed facade: http://127.0.0.1:8000/admin/
-11. Start Celery works and the scheduler.  
+10. Start Celery works and the scheduler.  
     Windows:
     ```
     celery -A capaggregator worker -l info --pool=solo
@@ -145,7 +143,7 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     celery -A capaggregator worker -l info -c 4
     celery -A capaggregator beat -l info
     ```
-12. Alerts are now being aggregated!  
+11. Alerts are now being aggregated!  
     Check the index page or feed facade for alert entries.
 
 ## Azure Deployment
@@ -165,6 +163,8 @@ The CAP aggregator uses three main Azure components: Web App(App Service), Postg
     Change network access to allow connection to the storage account  
     Change container access levels to allow connection to the containers  
     Find the storage account name and key under 'Access keys' for the next step.
+4. Upload geographical data to pre-populate the database
+    Upload the 'geographical' folder under 'cap_feed' to the 'media' container in Azure storage.
 
 4. Configure the Web App  
     Under 'Configuration' and 'Application settings' add new application settings
