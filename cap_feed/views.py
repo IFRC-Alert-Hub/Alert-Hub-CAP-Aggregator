@@ -11,7 +11,7 @@ import cap_feed.alert_cache as ac
 
 def index(request):
     try:
-        inject_data.delay()
+        inject_data.apply_async(args=[], kwargs={}, queue='inject')
     except:
         print('Celery not running')
 
