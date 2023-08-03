@@ -11,7 +11,7 @@ import cap_feed.alert_cache as ac
 
 def index(request):
     try:
-        inject_data.delay()
+        inject_data.apply_async(args=[], kwargs={}, queue='inject')
     except:
         print('Celery not running')
 
@@ -50,7 +50,7 @@ def get_feeds(request):
                 'byLanguage' : language_set,
                 'authorName': feed.author_name,
                 'authorEmail': feed.author_email,
-                'sourceIsOfficial': True,
+                'sourceIsOfficial': feed.official,
                 'capAlertFeed': feed.url,
                 'capAlertFeedStatus': 'testing',
                 'authorityCountry': feed.country.iso3,

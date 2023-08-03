@@ -55,7 +55,8 @@ def cache_dynamic_alerts():
     cache.set("static_alerts", static_alerts, timeout=None)
 
     #Convert dictionary into json format
-    all_alerts_in_json= json.dumps(static_alerts, indent=None)
+    all_alerts_in_json = json.dumps(static_alerts, indent=None)
+    print(all_alerts_in_json)
     return all_alerts_in_json
 
 def get_all_alerts():

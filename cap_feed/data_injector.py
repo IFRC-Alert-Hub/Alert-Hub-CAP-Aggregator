@@ -213,6 +213,7 @@ def inject_feeds():
                 feed.status = 'operating'
                 feed.author_name = 'Unknown'
                 feed.author_email = 'Unknown'
+                feed.official = True
                 feed.save()
 
                 info = LanguageInfo()
