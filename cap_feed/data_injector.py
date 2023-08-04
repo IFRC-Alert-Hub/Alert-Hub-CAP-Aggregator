@@ -2,7 +2,7 @@ import os
 import json
 import requests
 module_dir = os.path.dirname(__file__)  # get current directory
-from .models import Continent, Region, Country, District, Feed, LanguageInfo
+from .models import Continent, Region, Country, Admin1, Feed, LanguageInfo
 
 
 
@@ -22,9 +22,9 @@ def inject_geographical_data():
     if Country.objects.count() == 0:
         print('Injecting countries...')
         inject_countries(azure_path)
-    if District.objects.count() == 0:
-        print('Injecting districts...')
-        inject_districts(azure_path)
+    if Admin1.objects.count() == 0:
+        print('Injecting admin1s...')
+        inject_admin1s(azure_path)
 
 # inject continent data
 def inject_continents(azure_path):
@@ -148,38 +148,38 @@ def inject_countries(azure_path):
             country_data = json.load(file)
             process_countries_opendatasoft()
 
-# inject district data
-def inject_districts(azure_path):
-    def process_districts():
-        for feature in district_data['features']:
-            district = District()
+# inject admin1 data
+def inject_admin1s(azure_path):
+    def process_admin1s():
+        for feature in admin1_data['features']:
+            admin1 = Admin1()
             # Skip unparsable features
             if not 'shapeName' in feature['properties']:
                 continue
-            district.name = feature['properties']['shapeName']
+            admin1.name = feature['properties']['shapeName']
             iso3 = feature['properties']['shapeGroup']
             country = Country.objects.filter(iso3 = iso3).first()
             # Skip ISO3 codes that do not match existing countries
             if not country:
                 continue
-            district.country = country
+            admin1.country = country
             coordinates = feature['geometry']['coordinates']
             type = feature['geometry']['type']
             if type == 'Polygon':
-                district.polygon = coordinates
+                admin1.polygon = coordinates
             elif type == 'MultiPolygon':
-                district.multipolygon = coordinates
-            district.save()
+                admin1.multipolygon = coordinates
+            admin1.save()
     if azure_path:
         file_path = os.path.join(azure_path, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
         response = requests.get(file_path)
-        district_data = json.loads(response.content)
-        process_districts()
+        admin1_data = json.loads(response.content)
+        process_admin1s()
     else:
         file_path = os.path.join(module_dir, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
         with open(file_path, encoding='utf-8') as f:
-            district_data = json.load(f)
-            process_districts()
+            admin1_data = json.load(f)
+            process_admin1s()
             
 
 # inject feed configurations if not already present

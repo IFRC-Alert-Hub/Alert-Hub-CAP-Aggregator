@@ -9,12 +9,12 @@ This is a Python web app using the Django framework and the Azure Database for P
 **Easily maintain alert feeds**:
 - Manage individual feed properties such as polling intervals and country of alerting authority
 - Add new alerting sources quickly with support for atom, rss, and other formats
-- Manage geographical definitions: regions, continents, countries, districts
+- Manage geographical definitions: regions, continents, countries, admin1s
 - Identify problematic feeds with helpful error logs
 - Label official feeds and provide feed data to rebroadcasters including multi-language names, logos, and more
 
 **Efficient alert polling**:
-- Processes alert polygons to allow subscriptions to sub-national districts
+- Processes alert polygons to allow subscriptions to level 1 administrative boundaries
 - Detects expired and cancelled alerts to minimise workloads
 - Distributes feed polling using Redis task queues and concurrent Celery workers
 
@@ -34,29 +34,29 @@ The base unit of geographical area in our system is a country. Major alerting fe
 
 Each country belongs to both a region and continent. The five regions are defined according to the structure of IFRC's National Societies. Continents are defined according to the six continents system which refers to North and South America as the Americas. The primary reason for using this structure is due to organisation of countries and their metadata by the data source we used — [opendatasoft](https://public.opendatasoft.com/explore/dataset/world-administrative-boundaries/table/).
 
-Countries also have districts, which are level 1 administrative boundaries according to ISO 3166-2. Districts make it possible to be more precise with alert locations and allows for better filtering of relevant alerts in the Alert Hub map and subscription system. Our source for these districts is [geoBoundaries](https://www.geoboundaries.org)
+Countries also have level 1 administrative boundaries according to ISO 3166-2. Admin1 makes it possible to be more precise with alert locations and allows for better filtering of relevant alerts in the Alert Hub map and subscription system. Our source for these administrative boundaries is [geoBoundaries](https://www.geoboundaries.org)
 
-The allocation of countries into regions and continents is necessary for easier navigation and filtering on the IFRC Alert Hub website. The inclusion of specific countries (and territories) in our system was limited by the availability of high-quality and appropriate data sources. New countries and districts can be added or removed easily using the Feed Facade, and perhaps a new term could be used to replace 'countries' to account for the inclusion of territories and disputed states.
+The allocation of countries into regions and continents is necessary for easier navigation and filtering on the IFRC Alert Hub website. The inclusion of specific countries (and territories) in our system was limited by the availability of high-quality and appropriate data sources. New countries and admin1s can be added or removed easily using the Feed Facade, and perhaps a new term could be used to replace 'countries' to account for the inclusion of territories and disputed states.
 
 ## Alert Aggregation Process
 *Alerts are retrieved, processed, and saved before the Alert Manager passes them on to the Alert Hub map and subscription system.*
 
 New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Each feed has its own periodic task that is managed by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and multiple *Celery* workers for distributed processing.
 
-When processing the CAP feed of alerting feeds, a processing format is used to interpret the different types of feeds. For example, the 'atom' format can be selected when adding MeteoAlarm feeds in the feed facade, but 'rss' would need to be used to interpret alerts from Ghana Meteorological Agency's rss feed. Formats can be added and modified to handle special cases as well. Depending on information available in the alert feed, formats also allow for efficient processing by ignoring repeated and expired alerts. Using alert polygons, the affected districts within countries can be identified. This information is useful for the Alert Hub map and subscription service.
+When processing the CAP feed of alerting feeds, a processing format is used to interpret the different types of feeds. For example, the 'atom' format can be selected when adding MeteoAlarm feeds in the feed facade, but 'rss' would need to be used to interpret alerts from Ghana Meteorological Agency's rss feed. Formats can be added and modified to handle special cases as well. Depending on information available in the alert feed, formats also allow for efficient processing by ignoring repeated and expired alerts. Using alert polygons, the affected admin1s within countries can be identified. This information is useful for the Alert Hub map and subscription service.
 
 The CAP-aggregator processes alerts according to the CAP-v1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone.
 
 Another periodic task for removing expired alerts also runs continously in the background. This task is responsible for identifying and removing alerts which have expired since being saved to the database. However, the alert expiry date and time is contained in the *info* element according to CAP-v1.2. Therefore it is theoretically possible for multiple *info* elements to have different expiry times. Expired *info* elements are automatically removed, and the *alert* element (the actual alert itself) will be removed if all *info* elements have expired or been removed.
 
-Alerts are aggregated by districts, countries, regions, and continents. Feed data can be made available to rebroadcasters. This includes multi-language names and logos, operational statuses, author details labelling for official sources and more.
+Alerts are aggregated by admin_1s, countries, regions, and continents. Feed data can be made available to rebroadcasters. This includes multi-language names and logos, operational statuses, author details labelling for official sources and more.
 
 ## Feed Facade
-*Admin users can manage districts, countries, regions, continents, feeds, and each individual alert using the Feed Facade.*
+*Admin users can manage admin_1s, countries, regions, continents, feeds, and each individual alert using the Feed Facade.*
 
-Each alerting feed and their alerts belong to a country, and each country belongs to a particular region and continent. Therefore, it is necessary for regions and continents to exist first before countries can be added (although all regions and continents already exist in the system). Similarly, a new country needs be created by an admin user before districts and new alerting feeds can be added for that country.
+Each alerting feed and their alerts belong to a country, and each country belongs to a particular region and continent. Therefore, it is necessary for regions and continents to exist first before countries can be added (although all regions and continents already exist in the system). Similarly, a new country needs be created by an admin user before admin_1s and new alerting feeds can be added for that country.
 
-Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and feeds belonging to the deleted countries would also be deleted. Deleting an alerting feed would also delete retrieved alerts from that feed. However, alerts are not deleted when districts are removed, since alerts fundamentally belong to their country and feed.
+Deleting a region or continent would delete all countries belonging to them. In a chain reaction, all alerts and feeds belonging to the deleted countries would also be deleted. Deleting an alerting feed would also delete retrieved alerts from that feed. However, alerts are not deleted when admin_1s are removed, since alerts fundamentally belong to their country and feed.
 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter feeds by format (e.g., meteoalarm) or search for feeds belonging to a particular country using the search bar on the same page.
 
@@ -93,14 +93,14 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     sudo passwd postgres
     sudo service postgresql start
     sudo -u postgres psql
-    create database cap-aggregator;
+    create database cap_aggregator;
 
     sudo service postgresql status
     ```
 5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
     Example:
     ```
-    DBNAME=cap-aggregator
+    DBNAME=cap_aggregator
     DBHOST=localhost
     DBUSER=username
     DBPASS=1234
@@ -147,9 +147,9 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     Check the index page or feed facade for alert entries.
 
 ## Azure Deployment
-*The deploy steps of the CAP aggregator on Azure to communicate with other Alert Hub components.*
+*The deploy steps of the CAP Aggregator on Azure to communicate with other Alert Hub components.*
 
-The CAP aggregator uses three main Azure components: Web App(App Service), PostgreSQL database (Azure Database for PostgreSQL flexible server), and Redis Cache (Azure Cache for Redis).
+The CAP Aggregator uses three main Azure components: Web App(App Service), PostgreSQL database (Azure Database for PostgreSQL flexible server), and Redis Cache (Azure Cache for Redis).
 
 1. Create a Web App  
     Publish: Code  
@@ -203,7 +203,7 @@ Use the SSH console to interact with Celery services and create admin users for 
 
 
 ### Extra Commands
-*These commands can be useful while troubleshooting, but aren't necessary to deploy the CAP-aggregator.*
+*These commands can be useful while troubleshooting, but aren't necessary to deploy the CAP Aggregator.*
 
 Configure number of celery workers in startup.sh according to available core count. For example, '2' for low spec virtual machine, '12' for high spec local machine.
 ```
