@@ -165,9 +165,9 @@ def inject_districts(azure_path):
             coordinates = feature['geometry']['coordinates']
             type = feature['geometry']['type']
             if type == 'Polygon':
-                district.polygon = json.dumps({'coordinates' : coordinates})
+                district.polygon = coordinates
             elif type == 'MultiPolygon':
-                district.multipolygon = json.dumps({'coordinates' : coordinates})
+                district.multipolygon = coordinates
             district.save()
     if azure_path:
         file_path = os.path.join(azure_path, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
@@ -205,7 +205,6 @@ def inject_feeds():
         for feed_entry in feed_data:
             try:
                 feed = Feed()
-                feed.id = feed_entry[0]
                 feed.url = feed_entry[1]
                 feed.country = Country.objects.get(iso3 = feed_entry[2])
                 feed.format = feed_entry[3]
@@ -216,12 +215,11 @@ def inject_feeds():
                 feed.official = True
                 feed.save()
 
-                info = LanguageInfo()
-                info.feed = feed
-                info.name = feed_entry[0]
-                info.language = 'en'
-                info.logo = 'unknown.png'
-                info.save()
+                language_info = LanguageInfo()
+                language_info.feed = feed
+                language_info.name = feed_entry[0]
+                language_info.language = 'en'
+                language_info.save()
                 
             except Exception as e:
                 print(f'Error injecting feed {feed.id}: {e}')

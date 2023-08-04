@@ -93,10 +93,12 @@ def get_alert(url, alert_root, feed, ns):
                     for district in possible_districts:
                         district_polygon = None
                         if district.polygon:
-                            polygon_dict = json.loads(district.polygon)['coordinates'][0]
+                            polygon_string = '{"coordinates": ' + district.polygon + '}'
+                            polygon_dict = json.loads(polygon_string)['coordinates'][0]
                             district_polygon = Polygon(polygon_dict)
                         elif district.multipolygon:
-                            multipolygon_dict = json.loads(district.multipolygon)['coordinates']
+                            multipolygon_string = '{"coordinates": ' + district.multipolygon + '}'
+                            multipolygon_dict = json.loads(multipolygon_string)['coordinates']
                             polygons = [Polygon(x[0]) for x in multipolygon_dict]
                             district_polygon = MultiPolygon(polygons)
                         else:

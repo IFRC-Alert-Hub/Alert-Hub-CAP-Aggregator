@@ -18,8 +18,8 @@ class Continent(models.Model):
 
 class Region(models.Model):
     name = models.CharField(max_length=255)
-    polygon = models.TextField(blank=True, default='')
-    centroid = models.CharField(max_length=255, blank=True, default='')
+    polygon = models.TextField(blank=True, null=True)
+    centroid = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -27,11 +27,11 @@ class Region(models.Model):
 class Country(models.Model):
     name = models.CharField(max_length=255)
     iso3 = models.CharField(unique=True, validators=[MinValueValidator(3), MaxValueValidator(3)])
-    polygon = models.TextField(blank=True, default='')
-    multipolygon = models.TextField(blank=True, default='')
+    polygon = models.TextField(blank=True, null=True)
+    multipolygon = models.TextField(blank=True, null=True)
     region = models.ForeignKey(Region, on_delete=models.CASCADE)
     continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
-    centroid = models.CharField(max_length=255, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
@@ -63,9 +63,9 @@ class LanguageInfo(models.Model):
     LANGUAGE_CHOICES = [(lg.pt1, lg.pt1 + ' - ' + lg.name) for lg in iter_langs() if lg.pt1]
 
     feed = models.ForeignKey('Feed', on_delete=models.CASCADE)
-    name = models.CharField(max_length=255, default='')
+    name = models.CharField(max_length=255)
     language = models.CharField(choices=LANGUAGE_CHOICES, default='en')
-    logo = models.CharField(max_length=255, blank=True, default='')
+    logo = models.CharField(max_length=255, blank=True, null=True)
 
 class Feed(models.Model):
     INTERVAL_CHOICES = []
@@ -79,14 +79,13 @@ class Feed(models.Model):
     ]
 
     STATUS_CHOICES = {
-        ('operating', 'operating'),
+        ('active', 'active'),
         ('testing', 'testing'),
-        ('unused', 'unused'),
+        ('inactive', 'inactive'),
         ('unusable', 'unusable')
     }
 
-    id = models.CharField(max_length=255, unique=True, default='')
-    url = models.CharField(primary_key=True, max_length=255)
+    url = models.CharField(unique=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
