@@ -63,10 +63,21 @@ class LanguageInfoInline(MinValidatedInline, admin.StackedInline):
     validate_min = True
 
 class FeedAdmin(admin.ModelAdmin):
-    list_display = ["id", "country", "url", "format", "polling_interval"]
+    list_display = ["name", "country", "url", "format", "polling_interval"]
     list_filter = ["format", "polling_interval"]
     search_fields = ["url", "country"]
     inlines = [LanguageInfoInline]
+
+    def name(self, obj):
+        feed_name = 'unnamed feed'
+        try:
+            if english_feed := LanguageInfo.objects.filter(feed=obj, language='en').first():
+                feed_name = english_feed.name
+            elif other_feed := LanguageInfo.objects.filter(feed=obj).first():
+                feed_name = other_feed.name
+        except Exception as e:
+            print(e)
+        return feed_name
 
 class FeedLogAdmin(admin.ModelAdmin):
     list_display = ["exception", "feed", "description", "alert_url", "timestamp"]
@@ -83,12 +94,6 @@ class AlertDistrictAdmin(admin.ModelAdmin):
     search_fields = ["alert__url", "district__name"]
 
 admin.site.register(Alert, AlertAdmin)
-#admin.site.register(AlertInfo, AlertInfoAdmin)
-#admin.site.register(AlertInfoArea, AlertInfoAreaAdmin)
-#admin.site.register(AlertInfoParameter, AlertInfoParameterAdmin)
-#admin.site.register(AlertInfoAreaGeocode, AlertInfoAreaGeocodeAdmin)
-#admin.site.register(AlertInfoAreaPolygon, AlertInfoAreaPolygonAdmin)
-#admin.site.register(AlertInfoAreaCircle, AlertInfoAreaCircleAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
