@@ -52,6 +52,7 @@ def inject_regions(azure_path):
             region = Region()
             region.name = region_entry["region_name"]
             region.centroid = region_entry["centroid"]
+            region.polygon = ''
             coordinates = region_entry["bbox"]["coordinates"][0]
             for coordinate in coordinates:
                 region.polygon += str(coordinate[0]) + "," + str(coordinate[1]) + " "

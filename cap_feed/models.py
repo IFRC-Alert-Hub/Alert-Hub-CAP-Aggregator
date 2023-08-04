@@ -51,10 +51,12 @@ class District(models.Model):
     
     def save(self, *args, **kwargs):
         if self.polygon:
-            polygon = json.loads(self.polygon)['coordinates'][0]
+            polygon_string = '{"coordinates": ' + str(self.polygon) + '}'
+            polygon = json.loads(polygon_string)['coordinates'][0]
             self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = Polygon(polygon).bounds
         elif self.multipolygon:
-            polygon_list = json.loads(self.multipolygon)['coordinates']
+            multipolygon_string = '{"coordinates": ' + str(self.multipolygon) + '}'
+            polygon_list = json.loads(multipolygon_string)['coordinates']
             polygons = [Polygon(x[0]) for x in polygon_list]
             self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = MultiPolygon(polygons).bounds
         super(District, self).save(*args, **kwargs)
@@ -105,7 +107,7 @@ class Feed(models.Model):
         self.__old_url = self.url
 
     def __str__(self):
-        return self.id
+        return self.url
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
