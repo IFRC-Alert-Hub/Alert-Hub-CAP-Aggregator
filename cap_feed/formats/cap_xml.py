@@ -1,5 +1,5 @@
 import json
-from cap_feed.models import District, AlertDistrict, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
+from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
 from django.utils import timezone
 from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror
@@ -85,29 +85,29 @@ def get_alert(url, alert_root, feed, ns):
                     points = [point.split(',') for point in alert_info_area_polygon_entry.text.split(' ')]
                     polygons.append(Polygon([[point[1],point[0]] for point in points]))
 
-                # check polygon intersection with districts
+                # check polygon intersection with admin1s
                 for polygon in polygons:
                     (min_longitude, min_latitude, max_longitude, max_latitude) = polygon.bounds
-                    possible_districts = District.objects.filter(country = alert.country, min_longitude__lte=max_longitude, max_longitude__gte=min_longitude, min_latitude__lte=max_latitude, max_latitude__gte=min_latitude)
+                    possible_admin1s = Admin1.objects.filter(country = alert.country, min_longitude__lte=max_longitude, max_longitude__gte=min_longitude, min_latitude__lte=max_latitude, max_latitude__gte=min_latitude)
                     
-                    for district in possible_districts:
-                        district_polygon = None
-                        if district.polygon:
-                            polygon_string = '{"coordinates": ' + district.polygon + '}'
+                    for admin1 in possible_admin1s:
+                        admin1_polygon = None
+                        if admin1.polygon:
+                            polygon_string = '{"coordinates": ' + admin1.polygon + '}'
                             polygon_dict = json.loads(polygon_string)['coordinates'][0]
-                            district_polygon = Polygon(polygon_dict)
-                        elif district.multipolygon:
-                            multipolygon_string = '{"coordinates": ' + district.multipolygon + '}'
+                            admin1_polygon = Polygon(polygon_dict)
+                        elif admin1.multipolygon:
+                            multipolygon_string = '{"coordinates": ' + admin1.multipolygon + '}'
                             multipolygon_dict = json.loads(multipolygon_string)['coordinates']
                             polygons = [Polygon(x[0]) for x in multipolygon_dict]
-                            district_polygon = MultiPolygon(polygons)
+                            admin1_polygon = MultiPolygon(polygons)
                         else:
                             continue
-                        if district_polygon.intersects(polygon):
-                            alert_district = AlertDistrict()
-                            alert_district.alert = alert
-                            alert_district.district = district
-                            alert_district.save()
+                        if admin1_polygon.intersects(polygon):
+                            alert_admin1 = AlertAdmin1()
+                            alert_admin1.alert = alert
+                            alert_admin1.admin1 = admin1
+                            alert_admin1.save()
 
                 # navigate alert info area circle
                 for alert_info_area_circle_entry in alert_info_area_entry.findall('cap:circle', ns):

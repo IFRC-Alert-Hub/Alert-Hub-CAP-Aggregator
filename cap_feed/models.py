@@ -36,7 +36,7 @@ class Country(models.Model):
     def __str__(self):
         return self.iso3 + ' ' + self.name
     
-class District(models.Model):
+class Admin1(models.Model):
     name = models.CharField(max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     polygon = models.TextField(blank=True, null=True)
@@ -59,7 +59,7 @@ class District(models.Model):
             polygon_list = json.loads(multipolygon_string)['coordinates']
             polygons = [Polygon(x[0]) for x in polygon_list]
             self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = MultiPolygon(polygons).bounds
-        super(District, self).save(*args, **kwargs)
+        super(Admin1, self).save(*args, **kwargs)
 
 class LanguageInfo(models.Model):
     LANGUAGE_CHOICES = [(lg.pt1, lg.pt1 + ' - ' + lg.name) for lg in iter_langs() if lg.pt1]
@@ -92,7 +92,7 @@ class Feed(models.Model):
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
     official = models.BooleanField(default=False)
-    status = models.CharField(choices=STATUS_CHOICES, default='operating')
+    status = models.CharField(choices=STATUS_CHOICES, default='active')
     author_name = models.CharField(default='')
     author_email = models.CharField(default='')
 
@@ -140,7 +140,7 @@ class Alert(models.Model):
     ]
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    districts = models.ManyToManyField(District, through='AlertDistrict')
+    admin1s = models.ManyToManyField(Admin1, through='AlertAdmin1')
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     url = models.CharField(max_length=255, unique=True)
 
@@ -210,9 +210,9 @@ class Alert(models.Model):
 
         return alert_dict
     
-class AlertDistrict(models.Model):
+class AlertAdmin1(models.Model):
     alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
-    district = models.ForeignKey(District, on_delete=models.CASCADE)
+    admin1 = models.ForeignKey(Admin1, on_delete=models.CASCADE)
 
 class AlertCacheEncoder(json.JSONEncoder):
     def default(self, obj):

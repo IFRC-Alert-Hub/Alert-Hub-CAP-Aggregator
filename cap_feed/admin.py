@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertDistrict, Continent, Region, Country, District, LanguageInfo, Feed, FeedLog
+from .models import Alert, AlertInfo, AlertAdmin1, Continent, Region, Country, Admin1, LanguageInfo, Feed, FeedLog
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule, PeriodicTask
 from django_celery_results.models import TaskResult, GroupResult
 
@@ -46,7 +46,7 @@ class CountryAdmin(admin.ModelAdmin):
     list_filter = ["region", "continent"]
     search_fields = ["name", "iso3"]
 
-class DistrictAdmin(admin.ModelAdmin):
+class Admin1Admin(admin.ModelAdmin):
     list_display = ["name", "country"]
     list_filter = ["country"]
     search_fields = ["name"]
@@ -88,17 +88,17 @@ class FeedLogAdmin(admin.ModelAdmin):
         ("Log Details" , {"fields": ["exception", "error_message", "description", "response"]}),
     ]
 
-class AlertDistrictAdmin(admin.ModelAdmin):
-    list_display = ["alert", "district"]
-    list_filter = ["alert__country", "district"]
-    search_fields = ["alert__url", "district__name"]
+class AlertAdmin1Admin(admin.ModelAdmin):
+    list_display = ["alert", "admin1"]
+    list_filter = ["alert__country", "admin1"]
+    search_fields = ["alert__url", "admin1__name"]
 
 admin.site.register(Alert, AlertAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
 admin.site.register(Country, CountryAdmin)
-admin.site.register(District, DistrictAdmin)
-admin.site.register(AlertDistrict, AlertDistrictAdmin)
+admin.site.register(Admin1, Admin1Admin)
+admin.site.register(AlertAdmin1, AlertAdmin1Admin)
 admin.site.register(Feed, FeedAdmin)
 admin.site.register(FeedLog, FeedLogAdmin)
 

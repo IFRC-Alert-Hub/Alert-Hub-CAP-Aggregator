@@ -9,7 +9,7 @@ This is a Python web app using the Django framework and the Azure Database for P
 **Easily maintain alert feeds**:
 - Manage individual feed properties such as polling intervals and country of alerting authority
 - Add new alerting sources quickly with support for atom, rss, and other formats
-- Manage geographical definitions: regions, continents, countries, admin_1s
+- Manage geographical definitions: regions, continents, countries, admin1s
 - Identify problematic feeds with helpful error logs
 - Label official feeds and provide feed data to rebroadcasters including multi-language names, logos, and more
 
@@ -34,16 +34,16 @@ The base unit of geographical area in our system is a country. Major alerting fe
 
 Each country belongs to both a region and continent. The five regions are defined according to the structure of IFRC's National Societies. Continents are defined according to the six continents system which refers to North and South America as the Americas. The primary reason for using this structure is due to organisation of countries and their metadata by the data source we used — [opendatasoft](https://public.opendatasoft.com/explore/dataset/world-administrative-boundaries/table/).
 
-Countries also have level 1 administrative boundaries according to ISO 3166-2. Admin_1 makes it possible to be more precise with alert locations and allows for better filtering of relevant alerts in the Alert Hub map and subscription system. Our source for these admin_1s is [geoBoundaries](https://www.geoboundaries.org)
+Countries also have level 1 administrative boundaries according to ISO 3166-2. Admin1 makes it possible to be more precise with alert locations and allows for better filtering of relevant alerts in the Alert Hub map and subscription system. Our source for these administrative boundaries is [geoBoundaries](https://www.geoboundaries.org)
 
-The allocation of countries into regions and continents is necessary for easier navigation and filtering on the IFRC Alert Hub website. The inclusion of specific countries (and territories) in our system was limited by the availability of high-quality and appropriate data sources. New countries and admin_1s can be added or removed easily using the Feed Facade, and perhaps a new term could be used to replace 'countries' to account for the inclusion of territories and disputed states.
+The allocation of countries into regions and continents is necessary for easier navigation and filtering on the IFRC Alert Hub website. The inclusion of specific countries (and territories) in our system was limited by the availability of high-quality and appropriate data sources. New countries and admin1s can be added or removed easily using the Feed Facade, and perhaps a new term could be used to replace 'countries' to account for the inclusion of territories and disputed states.
 
 ## Alert Aggregation Process
 *Alerts are retrieved, processed, and saved before the Alert Manager passes them on to the Alert Hub map and subscription system.*
 
 New alert feeds are added by an admin from the Feed Facade and polling intervals are used to adjust the frequency of requests to the alerting source. Each feed has its own periodic task that is managed by the *Celery Beat* scheduler. These tasks are handed off to *Redis* and multiple *Celery* workers for distributed processing.
 
-When processing the CAP feed of alerting feeds, a processing format is used to interpret the different types of feeds. For example, the 'atom' format can be selected when adding MeteoAlarm feeds in the feed facade, but 'rss' would need to be used to interpret alerts from Ghana Meteorological Agency's rss feed. Formats can be added and modified to handle special cases as well. Depending on information available in the alert feed, formats also allow for efficient processing by ignoring repeated and expired alerts. Using alert polygons, the affected admin_1s within countries can be identified. This information is useful for the Alert Hub map and subscription service.
+When processing the CAP feed of alerting feeds, a processing format is used to interpret the different types of feeds. For example, the 'atom' format can be selected when adding MeteoAlarm feeds in the feed facade, but 'rss' would need to be used to interpret alerts from Ghana Meteorological Agency's rss feed. Formats can be added and modified to handle special cases as well. Depending on information available in the alert feed, formats also allow for efficient processing by ignoring repeated and expired alerts. Using alert polygons, the affected admin1s within countries can be identified. This information is useful for the Alert Hub map and subscription service.
 
 The CAP-aggregator processes alerts according to the CAP-v1.2 specification which details alert elements and sub-elements such as *info*. Dates and times are standardised across the system using the UTC timezone.
 
