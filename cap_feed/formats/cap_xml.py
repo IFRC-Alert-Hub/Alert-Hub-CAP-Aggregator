@@ -31,6 +31,7 @@ def get_alert(url, alert_root, feed, ns):
         if (x := alert_root.find('cap:incidents', ns)) is not None: alert.incidents = x.text
 
         alert_has_valid_info = False
+        alert_matched_admin1 = False
         # navigate alert info
         for alert_info_entry in alert_root.findall('cap:info', ns):
             alert_info = AlertInfo()
@@ -89,7 +90,6 @@ def get_alert(url, alert_root, feed, ns):
                 for polygon in polygons:
                     (min_longitude, min_latitude, max_longitude, max_latitude) = polygon.bounds
                     possible_admin1s = Admin1.objects.filter(country = alert.country, min_longitude__lte=max_longitude, max_longitude__gte=min_longitude, min_latitude__lte=max_latitude, max_latitude__gte=min_latitude)
-                    
                     for admin1 in possible_admin1s:
                         admin1_polygon = None
                         if admin1.polygon:
@@ -108,6 +108,7 @@ def get_alert(url, alert_root, feed, ns):
                             alert_admin1.alert = alert
                             alert_admin1.admin1 = admin1
                             alert_admin1.save()
+                            alert_matched_admin1 = True
 
                 # navigate alert info area circle
                 for alert_info_area_circle_entry in alert_info_area_entry.findall('cap:circle', ns):
@@ -124,7 +125,18 @@ def get_alert(url, alert_root, feed, ns):
                     alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
                     alert_info_area_geocode.save()
 
+        
+
         if (alert_has_valid_info):
+            if not alert_matched_admin1:
+                unknown_admin1 = Admin1.objects.filter(country = alert.country, name = 'Unknown').first()
+                if unknown_admin1:
+                    alert_admin1 = AlertAdmin1()
+                    alert_admin1.alert = alert
+                    alert_admin1.admin1 = unknown_admin1
+                    alert_admin1.save()
+                    alert_matched_admin1 = True
+
             alert.info_has_been_added()
             alert.save()
             return alert.url, True

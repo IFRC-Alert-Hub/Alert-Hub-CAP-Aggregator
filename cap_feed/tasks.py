@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 
-from .models import Alert, AlertInfo, Feed
+from .models import Alert, AlertInfo, Feed, Country
 from django.utils import timezone
-import cap_feed.data_injector as dl
+import cap_feed.data_injector as di
 import cap_feed.formats.format_handler as fh
 
 
@@ -29,7 +29,12 @@ def remove_expired_alerts(self):
     return f"removed {expired_alerts_count} alerts"
 
 @shared_task(bind=True)
+def delete_data(self):
+    Country.objects.all().delete()
+    return f"deleted data"
+
+@shared_task(bind=True)
 def inject_data(self):
-    dl.inject_geographical_data()
-    dl.inject_feeds()
+    di.inject_geographical_data()
+    di.inject_feeds()
     return f"injected data"
