@@ -1,26 +1,33 @@
-import json
-
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
 from .models import Alert, Feed, LanguageInfo
 
-from cap_feed.tasks import inject_data
+from cap_feed.tasks import inject_data, delete_data
 import cap_feed.alert_cache as ac
 
 
 
 def index(request):
-    try:
-        inject_data.apply_async(args=[], kwargs={}, queue='inject')
-    except:
-        print('Celery not running')
-
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
         "latest_alert_list": latest_alert_list,
     }
     return HttpResponse(template.render(context, request))
+
+def clear(request):
+    try:
+        delete_data.apply_async(args=[], kwargs={}, queue='inject')
+    except:
+        print('Celery not running')
+    return HttpResponse("Done")
+
+def inject(request):
+    try:
+        inject_data.apply_async(args=[], kwargs={}, queue='inject')
+    except:
+        print('Celery not running')
+    return HttpResponse("Done")
 
 def reset_template(request):
     ac.reset_template()

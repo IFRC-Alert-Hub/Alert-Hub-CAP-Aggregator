@@ -22,7 +22,6 @@ def inject_geographical_data():
     if Country.objects.count() == 0:
         print('Injecting countries...')
         inject_countries(azure_path)
-    if Admin1.objects.count() == 0:
         print('Injecting admin1s...')
         inject_admin1s(azure_path)
 
@@ -108,8 +107,9 @@ def inject_countries(azure_path):
             latitude = feature['properties']['geo_point_2d']['lat']
             longitude = feature['properties']['geo_point_2d']['lon']
             country.centroid = f'[{longitude}, {latitude}]'
-
-            country.save()
+            
+            if not Country.objects.filter(iso3 = country.iso3).first():
+                country.save()
             processed_iso3.add(country.iso3)
 
     region_names = {}

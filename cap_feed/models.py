@@ -1,6 +1,8 @@
 import json
 from datetime import timedelta
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.db import models, IntegrityError
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
@@ -35,6 +37,11 @@ class Country(models.Model):
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
+    
+@receiver(post_save, sender=Country)
+def create_unknown_admin1(sender, instance, created, **kwargs):
+    if created:
+        Admin1.objects.get_or_create(name='Unknown', country=instance)
     
 class Admin1(models.Model):
     name = models.CharField(max_length=255)
