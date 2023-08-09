@@ -4,7 +4,9 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('reset_template', views.reset_template, name='reset_template'),
-    path('get_alerts', views.get_alerts, name='dynamic_view'),
-    path('feeds', views.get_feeds, name='feeds'),
+    path('reset_template/', views.reset_template, name='reset_template'),
+    path('get_alerts/', views.get_alerts, name='dynamic_view'),
+    path('feeds/', views.get_feeds, name='feeds'),
+    path('clear/', views.clear, name='clear'),
+    path('inject/', views.inject, name='inject'),
 ]
