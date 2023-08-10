@@ -210,6 +210,8 @@ def inject_feeds():
                 feed.country = Country.objects.get(iso3 = feed_entry[2])
                 feed.format = feed_entry[3]
                 feed.polling_interval = 60
+                feed.enable_polling = True
+                feed.enable_rebroadcast = True
                 feed.status = 'operating'
                 feed.author_name = 'Unknown'
                 feed.author_email = 'Unknown'

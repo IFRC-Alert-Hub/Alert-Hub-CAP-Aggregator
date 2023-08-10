@@ -98,6 +98,8 @@ class Feed(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
+    enable_polling = models.BooleanField(default=False)
+    enable_rebroadcast = models.BooleanField(default=False)
     official = models.BooleanField(default=False)
     status = models.CharField(choices=STATUS_CHOICES, default='active')
     author_name = models.CharField(default='')
