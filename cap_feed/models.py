@@ -41,7 +41,7 @@ class Country(models.Model):
 @receiver(post_save, sender=Country)
 def create_unknown_admin1(sender, instance, created, **kwargs):
     if created:
-        Admin1.objects.get_or_create(name='Unknown', country=instance)
+        Admin1.objects.get_or_create(id=-instance.id, name='Unknown', country=instance)
     
 class Admin1(models.Model):
     name = models.CharField(max_length=255)
@@ -87,12 +87,12 @@ class Feed(models.Model):
         ('nws_us', 'nws_us')
     ]
 
-    STATUS_CHOICES = {
+    STATUS_CHOICES = [
         ('active', 'active'),
         ('testing', 'testing'),
         ('inactive', 'inactive'),
         ('unusable', 'unusable')
-    }
+    ]
 
     url = models.CharField(unique=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)

@@ -8,33 +8,33 @@ from .models import Continent, Region, Country, Admin1, Feed, LanguageInfo
 
 # inject region and country data if not already present
 def inject_geographical_data():
-    azure_path = None
+    inject_path = None
     if 'WEBSITE_HOSTNAME' in os.environ:
         from capaggregator.production import MEDIA_URL
-        azure_path = MEDIA_URL
+        inject_path = MEDIA_URL
 
     if Continent.objects.count() == 0:
         print('Injecting continents...')
-        inject_continents(azure_path)
+        inject_continents(inject_path)
     if Region.objects.count() == 0:
         print('Injecting regions...')
-        inject_regions(azure_path)
+        inject_regions(inject_path)
     if Country.objects.count() == 0:
         print('Injecting countries...')
-        inject_countries(azure_path)
+        inject_countries(inject_path)
         print('Injecting admin1s...')
-        inject_admin1s(azure_path)
+        inject_admin1s(inject_path)
 
 # inject continent data
-def inject_continents(azure_path):
+def inject_continents(inject_path):
     def process_continents():
         for continent_entry in continent_data:
             continent = Continent()
             continent.name = continent_entry["name"]
             continent.save()
 
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/continents.json')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/continents.json')
         response = requests.get(file_path)
         continent_data = json.loads(response.content)
         process_continents()
@@ -45,7 +45,7 @@ def inject_continents(azure_path):
             process_continents()
 
 # inject region data
-def inject_regions(azure_path):
+def inject_regions(inject_path):
     def process_regions():
         for region_entry in region_data:
             region = Region()
@@ -57,8 +57,8 @@ def inject_regions(azure_path):
                 region.polygon += str(coordinate[0]) + "," + str(coordinate[1]) + " "
             region.save()
 
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/ifrc-regions.json')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/ifrc-regions.json')
         response = requests.get(file_path)
         region_data = json.loads(response.content)
         process_regions()
@@ -69,7 +69,7 @@ def inject_regions(azure_path):
             process_regions()
 
 # inject country data
-def inject_countries(azure_path):
+def inject_countries(inject_path):
     def process_regions():
         for region_entry in region_data:
             name = region_entry["region_name"]
@@ -113,8 +113,8 @@ def inject_countries(azure_path):
             processed_iso3.add(country.iso3)
 
     region_names = {}
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/ifrc-regions.json')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/ifrc-regions.json')
         response = requests.get(file_path)
         region_data = json.loads(response.content)
         process_regions()
@@ -125,8 +125,8 @@ def inject_countries(azure_path):
             process_regions()
 
     ifrc_countries = {}
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/ifrc-countries-and-territories.json')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/ifrc-countries-and-territories.json')
         response = requests.get(file_path)
         country_data = json.loads(response.content)
         process_countries_ifrc()
@@ -137,8 +137,8 @@ def inject_countries(azure_path):
             process_countries_ifrc()
     
     processed_iso3 = set()
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/opendatasoft-countries-and-territories.geojson')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/opendatasoft-countries-and-territories.geojson')
         response = requests.get(file_path)
         country_data = json.loads(response.content)
         process_countries_opendatasoft()
@@ -149,7 +149,7 @@ def inject_countries(azure_path):
             process_countries_opendatasoft()
 
 # inject admin1 data
-def inject_admin1s(azure_path):
+def inject_admin1s(inject_path):
     def process_admin1s():
         for feature in admin1_data['features']:
             admin1 = Admin1()
@@ -170,8 +170,8 @@ def inject_admin1s(azure_path):
             elif type == 'MultiPolygon':
                 admin1.multipolygon = coordinates
             admin1.save()
-    if azure_path:
-        file_path = os.path.join(azure_path, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
+    if inject_path:
+        file_path = os.path.join(inject_path, 'geographical/geoBoundariesCGAZ_ADM1.geojson')
         response = requests.get(file_path)
         admin1_data = json.loads(response.content)
         process_admin1s()
