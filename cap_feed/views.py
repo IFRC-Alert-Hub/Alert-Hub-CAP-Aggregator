@@ -37,7 +37,7 @@ def get_alerts(request):
     return HttpResponse(ac.get_all_alerts())
 
 def get_feeds(request):
-    feeds = Feed.objects.all()
+    feeds = Feed.objects.filter(enable_rebroadcast=True)
     response = {'sources' : []}
     for feed in feeds:
 

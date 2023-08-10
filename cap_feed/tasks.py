@@ -13,6 +13,8 @@ def poll_feed(self, url):
     polled_alerts_count = 0
     try:
         feed = Feed.objects.get(url=url)
+        if not feed.enable_polling:
+            return f"Feed with url {url} is disabled for polling"
         # additional persisting alerts to not be deleted, mainly for testing
         alert_urls = set()
         polled_alerts_count += fh.get_alerts(feed, alert_urls)
