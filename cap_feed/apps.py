@@ -12,7 +12,7 @@ class CapFeedConfig(AppConfig):
         Alert = self.get_model("Alert")
         post_delete.connect(delete_feed, sender=Feed)
         post_save.connect(cache_incoming_alert, sender=Alert)
-        post_delete.connect(cache_removed_alert,sender=Alert)
+        post_delete.connect(cache_removed_alert, sender=Alert)
     
 def delete_feed(sender, instance, *args, **kwargs):
     from .models import remove_task
