@@ -144,6 +144,8 @@ def get_alert(url, alert_root, feed, ns):
     except AttributeError as e:
         log_attributeerror(feed, e, url)
     except IntegrityError as e:
+        if 'duplicate key value' in str(e):
+            pass
         log_integrityerror(feed, e, url)
 
     return alert.url, False
