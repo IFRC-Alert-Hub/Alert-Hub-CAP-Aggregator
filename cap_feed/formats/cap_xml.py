@@ -125,9 +125,7 @@ def get_alert(url, alert_root, feed, ns):
                     alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
                     alert_info_area_geocode.save()
 
-        
-
-        if (alert_has_valid_info):
+        if alert_has_valid_info:
             if not alert_matched_admin1:
                 unknown_admin1 = Admin1.objects.filter(country = alert.country, name = 'Unknown').first()
                 if unknown_admin1:
@@ -144,6 +142,8 @@ def get_alert(url, alert_root, feed, ns):
     except AttributeError as e:
         log_attributeerror(feed, e, url)
     except IntegrityError as e:
+        if 'duplicate key value' in str(e):
+            pass
         log_integrityerror(feed, e, url)
 
     return alert.url, False

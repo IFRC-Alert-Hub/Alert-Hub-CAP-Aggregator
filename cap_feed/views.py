@@ -3,7 +3,6 @@ from django.template import loader
 from .models import Alert, Feed, LanguageInfo
 
 from cap_feed.tasks import inject_data, delete_data
-import cap_feed.alert_cache as ac
 
 
 
@@ -28,13 +27,6 @@ def inject(request):
     except:
         print('Celery not running')
     return HttpResponse("Done")
-
-def reset_template(request):
-    ac.reset_template()
-    return HttpResponse("Done")
-
-def get_alerts(request):
-    return HttpResponse(ac.get_all_alerts())
 
 def get_feeds(request):
     feeds = Feed.objects.filter(enable_rebroadcast=True)
