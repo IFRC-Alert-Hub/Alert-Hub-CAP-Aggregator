@@ -25,7 +25,7 @@ def poll_feed(self, url):
 @shared_task(bind=True)
 def remove_expired_alerts(self):
     AlertInfo.objects.filter(expires__lt=timezone.now()).delete()
-    expired_alerts = Alert.objects.filter(info__isnull=True)
+    expired_alerts = Alert.objects.filter(infos__isnull=True)
     expired_alerts_count = expired_alerts.count()
     expired_alerts.delete()
     return f"removed {expired_alerts_count} alerts"

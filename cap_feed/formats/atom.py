@@ -24,9 +24,12 @@ def get_alerts_atom(feed, ns):
     for alert_entry in root.findall('atom:entry', ns):
         try:
             # skip if alert is expired
-            expires = convert_datetime(x.text) if (x := alert_entry.find('cap:expires', ns)) else None
-            if expires and expires < timezone.now():
-                continue
+            x = alert_entry.find('cap:expires', ns)
+            # if x: IS NOT EQUIVALENT
+            if not x is None:
+                expires = convert_datetime(x.text)
+                if expires < timezone.now():
+                    continue
             # skip if alert already exists
             url = alert_entry.find('atom:id', ns).text
             if Alert.objects.filter(url=url).exists():
