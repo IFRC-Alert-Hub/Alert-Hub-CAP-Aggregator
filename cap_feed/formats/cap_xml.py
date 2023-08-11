@@ -125,7 +125,7 @@ def get_alert(url, alert_root, feed, ns):
                     alert_info_area_geocode.value = alert_info_area_geocode_entry.find('cap:value', ns).text
                     alert_info_area_geocode.save()
 
-        if (alert_has_valid_info):
+        if alert_has_valid_info:
             if not alert_matched_admin1:
                 unknown_admin1 = Admin1.objects.filter(country = alert.country, name = 'Unknown').first()
                 if unknown_admin1:

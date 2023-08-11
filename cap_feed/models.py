@@ -192,7 +192,7 @@ class Alert(models.Model):
         alert_dict['iso3'] = self.country.iso3
 
         info_list = []
-        for info in self.info.all():
+        for info in self.infos.all():
             info_list.append(info.to_dict())
         alert_dict['info'] = info_list
         return alert_dict
@@ -206,14 +206,14 @@ class Alert(models.Model):
         alert_dict['feed_url'] = self.feed.url
         alert_dict['scope'] = self.scope
 
-        first_info = self.info.first()
+        first_info = self.infos.first()
         if first_info != None:
             alert_dict['urgency'] = first_info.urgency
             alert_dict['severity'] = first_info.severity
             alert_dict['certainty'] = first_info.certainty
 
         info_list = []
-        for info in self.info.all():
+        for info in self.infos.all():
             info_list.append(info.alert_info_to_be_transferred_to_dict())
         alert_dict['info'] = info_list
 
@@ -293,7 +293,7 @@ class AlertInfo(models.Model):
         ('Unknown', 'Unknown')
     ]
 
-    alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name="info")
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name='infos')
     
     language = models.CharField(max_length=255, blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
