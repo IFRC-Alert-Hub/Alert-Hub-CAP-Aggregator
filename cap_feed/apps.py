@@ -33,7 +33,6 @@ def delete_feed(sender, instance, *args, **kwargs):
 def notify_incoming_alert_for_subscription(sender, instance, *args, **kwargs):
     from capaggregator.celery import app
     if instance.all_info_are_added():
-        print("?????????????")
         app.send_task('subscription_manager_dir.tasks.get_incoming_alert', args=[],
                       kwargs={'alert_id': instance.id}, queue='subscription_manager',
                       routing_key='subscription_manager.#', exchange='subscription_manager')
