@@ -21,7 +21,6 @@ from django.core.asgi import get_asgi_application
 from django.core.wsgi import get_wsgi_application
 from dotenv import load_dotenv
 import django
-import capaggregator.routing
 
 if 'WEBSITE_HOSTNAME' not in os.environ:
     load_dotenv(".env")
@@ -35,9 +34,5 @@ django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": OriginValidator(
-        AuthMiddlewareStack(URLRouter(capaggregator.routing.websocket_urlpatterns)),
-        ["wss://localhost", "wss://backend-develop.azurewebsites.net", "wss://backend-deploy.azurewebsites.net"]
-    ),
 })
 
