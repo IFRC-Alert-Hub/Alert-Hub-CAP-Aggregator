@@ -12,18 +12,13 @@ class CapFeedConfig(AppConfig):
     name = 'cap_feed'
     # Listen to the new registration event of feed
     def ready(self):
-        if ('WEBSITE_HOSTNAME' in os.environ and 'migrate' not in sys.argv and 'collectstatic'
-         not in sys.argv) or ('WEBSITE_HOSTNAME' not in os.environ and 'runserver' in sys.argv):
-            from django.core.cache import cache
-            result = cache.add('locked', True, timeout=10)
-            if result:
-                Feed = self.get_model("Feed")
-                Alert = self.get_model("Alert")
-                post_save.connect(notify_incoming_alert_for_subscription, sender=Alert)
-                post_delete.connect(notify_removed_alert_for_subscription, sender=Alert)
-                post_delete.connect(delete_feed, sender=Feed)
-                post_save.connect(cache_incoming_alert, sender=Alert)
-                pre_delete.connect(cache_removed_alert, sender=Alert)
+        Feed = self.get_model("Feed")
+        Alert = self.get_model("Alert")
+        post_save.connect(notify_incoming_alert_for_subscription, sender=Alert)
+        post_delete.connect(notify_removed_alert_for_subscription, sender=Alert)
+        post_delete.connect(delete_feed, sender=Feed)
+        post_save.connect(cache_incoming_alert, sender=Alert)
+        pre_delete.connect(cache_removed_alert, sender=Alert)
 
     
 def delete_feed(sender, instance, *args, **kwargs):
