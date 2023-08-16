@@ -115,6 +115,10 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
     python manage.py test
     ```
 7. Setup a Redis server and check it works.  
+    Windows:
+    ```
+    docker run -p 6379:6379 -d redis:5
+    ```
     Linux:
     ```
     sudo apt install redis-server

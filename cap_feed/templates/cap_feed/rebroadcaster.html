@@ -1,8 +1,0 @@
-<!-- Cached template for static content -->
-{% load cache %}
-
-{% cache 2000 static_alerts_key %}
-    <pre>{{ static_alerts }}</pre>
-{% endcache %}
-{% comment %} <!---> {% endcomment %}
-<pre>{{ dynamic_alerts }}</pre>

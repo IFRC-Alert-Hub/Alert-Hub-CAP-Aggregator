@@ -1,10 +1,11 @@
 import os
 from celery import Celery
-from celery.schedules import crontab
 from datetime import timedelta
 from django.conf import settings
 from dotenv import load_dotenv
 from kombu import Queue
+
+
 
 # Load environment variables from .env file
 if 'WEBSITE_HOSTNAME' not in os.environ:
