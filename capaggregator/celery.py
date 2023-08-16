@@ -1,10 +1,11 @@
 import os
 from celery import Celery
-from celery.schedules import crontab
 from datetime import timedelta
 from django.conf import settings
 from dotenv import load_dotenv
 from kombu import Queue
+
+
 
 # Load environment variables from .env file
 if 'WEBSITE_HOSTNAME' not in os.environ:
@@ -21,7 +22,6 @@ app.conf.beat_schedule = {
         'schedule': timedelta(minutes=1)
     }
 }
-
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
