@@ -1,9 +1,5 @@
-import os
-import sys
-
 from django.apps import AppConfig
 from django.db.models.signals import post_delete, post_save, pre_delete
-import json
 
 
 
@@ -58,6 +54,5 @@ def cache_removed_alert(sender, instance, *args, **kwargs):
         'admin1_ids': [alert_admin1.admin1.id for alert_admin1 in instance.alertadmin1_set.all()],
         'info_ids': [info.id for info in instance.infos.all()],
     }
-    #print(alert_data)
 
     app.send_task('cache.tasks.remove_cached_alert', args=[], kwargs=alert_data, queue='cache', routing_key='cache.#', exchange='cache')
