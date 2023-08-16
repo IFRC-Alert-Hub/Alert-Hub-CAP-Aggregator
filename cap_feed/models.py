@@ -1,15 +1,16 @@
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
 import json
-import time
 from datetime import timedelta
-
-
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db import models, IntegrityError
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from django_celery_beat.models import PeriodicTask
+from shapely.geometry import Polygon, MultiPolygon
+from iso639 import Lang, iter_langs
 
-# Create your models here.
+
 
 class Continent(models.Model):
     name = models.CharField(max_length=255)
@@ -19,8 +20,8 @@ class Continent(models.Model):
 
 class Region(models.Model):
     name = models.CharField(max_length=255)
-    polygon = models.TextField(blank=True, default='')
-    centroid = models.CharField(max_length=255, blank=True, default='')
+    polygon = models.TextField(blank=True, null=True)
+    centroid = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -28,70 +29,101 @@ class Region(models.Model):
 class Country(models.Model):
     name = models.CharField(max_length=255)
     iso3 = models.CharField(unique=True, validators=[MinValueValidator(3), MaxValueValidator(3)])
-    polygon = models.TextField(blank=True, default='')
-    multipolygon = models.TextField(blank=True, default='')
+    polygon = models.TextField(blank=True, null=True)
+    multipolygon = models.TextField(blank=True, null=True)
     region = models.ForeignKey(Region, on_delete=models.CASCADE)
     continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
-    centroid = models.CharField(max_length=255, blank=True, default='')
+    centroid = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
+    
+@receiver(post_save, sender=Country)
+def create_unknown_admin1(sender, instance, created, **kwargs):
+    if created:
+        Admin1.objects.get_or_create(id=-instance.id, name='Unknown', country=instance)
+    
+class Admin1(models.Model):
+    name = models.CharField(max_length=255)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
+    polygon = models.TextField(blank=True, null=True)
+    multipolygon = models.TextField(blank=True, null=True)
+    min_latitude = models.FloatField(editable=False, null=True)
+    max_latitude = models.FloatField(editable=False, null=True)
+    min_longitude = models.FloatField(editable=False, null=True)
+    max_longitude = models.FloatField(editable=False, null=True)
 
-class Source(models.Model):
+    def __str__(self):
+        return self.name
+    
+    def save(self, *args, **kwargs):
+        if self.polygon:
+            polygon_string = '{"coordinates": ' + str(self.polygon) + '}'
+            polygon = json.loads(polygon_string)['coordinates'][0]
+            self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = Polygon(polygon).bounds
+        elif self.multipolygon:
+            multipolygon_string = '{"coordinates": ' + str(self.multipolygon) + '}'
+            polygon_list = json.loads(multipolygon_string)['coordinates']
+            polygons = [Polygon(x[0]) for x in polygon_list]
+            self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude = MultiPolygon(polygons).bounds
+        super(Admin1, self).save(*args, **kwargs)
+
+class LanguageInfo(models.Model):
+    LANGUAGE_CHOICES = [(lg.pt1, lg.pt1 + ' - ' + lg.name) for lg in iter_langs() if lg.pt1]
+
+    feed = models.ForeignKey('Feed', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    language = models.CharField(choices=LANGUAGE_CHOICES, default='en')
+    logo = models.CharField(max_length=255, blank=True, null=True)
+
+class Feed(models.Model):
     INTERVAL_CHOICES = []
-    # [10, 45, 60, 75, 90, 105, 120]
-    for interval in range(10, 130, 10):
+    for interval in range(5, 65, 5):
         INTERVAL_CHOICES.append((interval, f"{interval} seconds"))
 
     FORMAT_CHOICES = [
-        ('meteoalarm', 'meteoalarm'),
-        ('aws', 'aws'),
+        ('atom', 'atom'),
+        ('rss', 'rss'),
         ('nws_us', 'nws_us')
     ]
 
-    url = models.CharField(primary_key=True, max_length=255)
+    STATUS_CHOICES = [
+        ('active', 'active'),
+        ('testing', 'testing'),
+        ('inactive', 'inactive'),
+        ('unusable', 'unusable')
+    ]
+
+    url = models.CharField(unique=True, max_length=255)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
-    atom = models.CharField(editable=False, default='http://www.w3.org/2005/Atom')
-    cap = models.CharField(editable=False, default='urn:oasis:names:tc:emergency:cap:1.2')
+    enable_polling = models.BooleanField(default=False)
+    enable_rebroadcast = models.BooleanField(default=False)
+    official = models.BooleanField(default=False)
+    status = models.CharField(choices=STATUS_CHOICES, default='active')
+    author_name = models.CharField(default='')
+    author_email = models.CharField(default='')
+
+    notes = models.TextField(blank=True, default='')
     
-    __previous_polling_interval = None
-    __previous_url = None
+    __old_polling_interval = None
+    __old_url = None
 
     def __init__(self, *args, **kwargs):
-        super(Source, self).__init__(*args, **kwargs)
-        self.__previous_polling_interval = self.polling_interval
-        self.__previous_url = self.url
+        super(Feed, self).__init__(*args, **kwargs)
+        self.__old_polling_interval = self.polling_interval
+        self.__old_url = self.url
 
     def __str__(self):
-        name = self.format + ' ' + str(self.country)
-        return name
+        return self.url
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         if self._state.adding:
-            add_source(self)
+            add_task(self)
         else:
-            update_source(self, self.__previous_url, self.__previous_polling_interval)
-        super(Source, self).save(force_insert, force_update, *args, **kwargs)
-
-    # For serialization
-    def to_dict(self):
-        source_dict = dict()
-        source_dict['url'] = self.url
-        source_dict['country'] = self.country.iso3
-        source_dict['format'] = self.format
-        source_dict['polling_interval'] = self.polling_interval
-        source_dict['atom'] = self.atom
-        source_dict['cap'] = self.cap
-        return source_dict
-
-class SourceEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Source):
-            return obj.to_dict()
-
-        return super().default(obj)
+            update_task(self, self.__old_url, self.__old_polling_interval)
+        super(Feed, self).save(force_insert, force_update, *args, **kwargs)
     
 class Alert(models.Model):
     STATUS_CHOICES = [
@@ -117,8 +149,9 @@ class Alert(models.Model):
     ]
 
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
-    source_feed = models.ForeignKey(Source, on_delete=models.CASCADE)
-    id = models.CharField(primary_key=True, max_length=255)
+    admin1s = models.ManyToManyField(Admin1, through='AlertAdmin1')
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
+    url = models.CharField(max_length=255, unique=True)
 
     identifier = models.CharField(max_length=255)
     sender = models.CharField(max_length=255)
@@ -134,38 +167,81 @@ class Alert(models.Model):
     references = models.TextField(blank=True, default='')
     incidents = models.TextField(blank=True, default='')
 
+    __all_info_added = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__all_info_added = False
+
     def __str__(self):
-        return self.id
-    
-    # For serialization
+        return self.url
+
+    def info_has_been_added(self):
+        self.__all_info_added = True
+
+    def all_info_are_added(self):
+        return self.__all_info_added
+
+    # This method will be used for serialization of alert object to be cached into Redis.
     def to_dict(self):
         alert_dict = dict()
-        alert_dict['country'] = self.country.iso3
-        alert_dict['source_feed'] = self.source_feed.url
-        alert_dict['id'] = self.id
+        alert_dict['url'] = self.url
         alert_dict['identifier'] = self.identifier
-        alert_dict['sender'] = self.sender
-        alert_dict['sent'] = str(self.sent)
-        alert_dict['status'] = self.status
-        alert_dict['msg_type'] = self.msg_type
         alert_dict['source'] = self.source
-        alert_dict['scope'] = self.scope
-        alert_dict['restriction'] = self.restriction
-        alert_dict['addresses'] = self.addresses
-        alert_dict['code'] = self.code
-        alert_dict['note'] = self.note
-        alert_dict['references'] = self.references
-        alert_dict['incidents'] = self.incidents
+        alert_dict['country'] = self.country.name
+        alert_dict['iso3'] = self.country.iso3
+
+        info_list = []
+        for info in self.infos.all():
+            info_list.append(info.to_dict())
+        alert_dict['info'] = info_list
         return alert_dict
 
-class AlertEncoder(json.JSONEncoder):
+    # This method will be used for serialization of alert object to be transferred by websocket.
+    def alert_to_be_transferred_to_dict(self):
+        alert_dict = dict()
+        alert_dict['url'] = self.url
+        alert_dict['country_name'] = self.country.name
+        alert_dict['country_id'] = self.country.id
+        alert_dict['feed_url'] = self.feed.url
+        alert_dict['scope'] = self.scope
+
+        first_info = self.infos.first()
+        if first_info != None:
+            alert_dict['urgency'] = first_info.urgency
+            alert_dict['severity'] = first_info.severity
+            alert_dict['certainty'] = first_info.certainty
+
+        info_list = []
+        for info in self.infos.all():
+            info_list.append(info.alert_info_to_be_transferred_to_dict())
+        alert_dict['info'] = info_list
+
+        return alert_dict
+    
+class AlertAdmin1(models.Model):
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
+    admin1 = models.ForeignKey(Admin1, on_delete=models.CASCADE)
+
+class AlertCacheEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Alert):
             return obj.to_dict()
 
         return super().default(obj)
+
+class AlertTransferEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Alert):
+            return obj.alert_to_be_transferred_to_dict()
+
+        return super().default(obj)
     
 class AlertInfo(models.Model):
+    # To dynamically set default expire time
+    def default_expire():
+        return timezone.now() + timedelta(days=1)
+
     CATEGORY_CHOICES = [
         ('Geo', 'Geo'),
         ('Met', 'Met'),
@@ -217,7 +293,7 @@ class AlertInfo(models.Model):
         ('Unknown', 'Unknown')
     ]
 
-    alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
+    alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name='infos')
     
     language = models.CharField(max_length=255, blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
@@ -231,83 +307,185 @@ class AlertInfo(models.Model):
     #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
     effective = models.DateTimeField(blank=True, default=timezone.now)
     onset = models.DateTimeField(blank=True, null=True)
-    expires = models.DateTimeField(blank=True, default=(timezone.now() + timedelta(days=1)))
+    expires = models.DateTimeField(blank=True, default=default_expire)
     sender_name = models.CharField(max_length=255, blank=True, default='')
     headline = models.CharField(max_length=255, blank=True, default='')
-    description = models.TextField(blank=True, default='')
-    instruction = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, null=True, default=None)
+    instruction = models.TextField(blank=True, null=True, default=None)
     web = models.URLField(blank=True, null=True)
     contact = models.CharField(max_length=255, blank=True, default='')
     parameter = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
-        return self.alert.id + ' ' + self.language
+        return str(self.alert) + ' ' + self.language
 
+    def to_dict(self):
+        alert_info_dict = dict()
+        alert_info_dict['language'] = self.language
+        alert_info_dict['category'] = self.category
+        alert_info_dict['event'] = self.event
+        alert_info_dict['urgency'] = self.urgency
+        alert_info_dict['severity'] = self.severity
+        alert_info_dict['certainty'] = self.certainty
+        alert_info_dict['expires'] = str(self.expires)
+        alert_info_dict['sender_name'] = self.sender_name
+        alert_info_dict['headline'] = self.headline
+        alert_info_dict['description'] = self.description
+        alert_info_dict['instruction'] = self.instruction
 
+        area_set = self.alertinfoarea_set.all()
+        area_list = []
+        for area in area_set:
+            area_list.append(area.to_dict())
+        if len(area_list) != 0:
+            alert_info_dict['area'] = area_list
 
-# Adds source to a periodic task
-def add_source(source):
-    interval = source.polling_interval
+        return alert_info_dict
+
+    def alert_info_to_be_transferred_to_dict(self):
+        alert_info_dict = dict()
+        alert_info_dict['language'] = self.language
+        alert_info_dict['category'] = self.category
+        alert_info_dict['headline'] = self.headline
+        alert_info_dict['description'] = self.description
+        alert_info_dict['instruction'] = self.instruction
+        return alert_info_dict
+
+class AlertInfoParameter(models.Model):
+    alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
+
+    value_name = models.CharField(max_length=255)
+    value = models.TextField()
+
+    def to_dict(self):
+        alert_info_parameter_dict = dict()
+        alert_info_parameter_dict['value_name'] = self.value_name
+        alert_info_parameter_dict['value'] = self.value
+        return alert_info_parameter_dict
+
+class AlertInfoArea(models.Model):
+    alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
+
+    area_desc = models.TextField()
+    altitude = models.CharField(blank=True, default='')
+    ceiling = models.CharField(blank=True, default='')
+
+    def __str__(self):
+        return str(self.alert_info) + ' ' + self.area_desc
+
+    def to_dict(self):
+        alert_info_area_dict = dict()
+        alert_info_area_dict['area_desc'] = self.area_desc
+        alert_info_area_dict['altitude'] = self.altitude
+        alert_info_area_dict['ceiling'] = self.ceiling
+
+        area_polygon_set = self.alertinfoareapolygon_set.all()
+        area_polygon_list = []
+        for area_polygon in area_polygon_set:
+            area_polygon_list.append(area_polygon.to_dict())
+        if len(area_polygon_list) != 0:
+            alert_info_area_dict['polygon'] = area_polygon_list
+
+        area_circle_set = self.alertinfoareacircle_set.all()
+        area_circle_list = []
+        for area_circle in area_circle_set:
+            area_circle_list.append(area_circle.to_dict())
+        if len(area_circle_list) != 0:
+            alert_info_area_dict['circle'] = area_circle_list
+
+        area_geocode_set = self.alertinfoareageocode_set.all()
+        area_geocode_list = []
+        for area_geocode in area_geocode_set:
+            area_geocode_list.append(area_geocode.to_dict())
+        if len(area_geocode_list) != 0:
+            alert_info_area_dict['geocode'] = area_geocode_list
+
+        return alert_info_area_dict
+
+class AlertInfoAreaPolygon(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value = models.TextField()
+
+    def to_dict(self):
+        alert_info_area_ploygon_dict = dict()
+        alert_info_area_ploygon_dict['value'] = self.value
+        return alert_info_area_ploygon_dict
+
+class AlertInfoAreaCircle(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value = models.TextField()
+
+    def to_dict(self):
+        alert_info_area_circle_dict = dict()
+        alert_info_area_circle_dict['value'] = self.value
+        return alert_info_area_circle_dict
+
+class AlertInfoAreaGeocode(models.Model):
+    alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
+
+    value_name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+
+    def to_dict(self):
+        alert_info_area_geocode_dict = dict()
+        alert_info_area_geocode_dict['value_name'] = self.value_name
+        alert_info_area_geocode_dict['value'] = self.value
+        return alert_info_area_geocode_dict
+    
+class FeedLog(models.Model):
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
+    exception = models.CharField(max_length=255, default='exception')
+    error_message = models.TextField(default='')
+    description = models.TextField(default='')
+    response = models.TextField(default='')
+    alert_url = models.CharField(max_length=255, blank=True, default='')
+    timestamp = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['alert_url', 'description'], name="unique_alert_error"),
+        ]
+
+    def save(self, *args, **kwargs):
+        FeedLog.objects.filter(feed=self.feed, timestamp__lt=timezone.now() - timedelta(weeks=2)).delete()
+        try:
+            super(FeedLog, self).save(*args, **kwargs)
+        except IntegrityError:
+            pass
+
+# Add task to poll feed
+def add_task(feed):
+    interval = feed.polling_interval
     interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
     if interval_schedule is None:
         interval_schedule = IntervalSchedule.objects.create(every=interval, period='seconds')
         interval_schedule.save()
-    alert_tasks = PeriodicTask.objects.filter(task='cap_feed.tasks.poll_new_alerts')
-    existing_task = None
-    for alert_task in alert_tasks:
-        if alert_task.interval.every == interval and alert_task.interval.period == 'seconds':
-            existing_task = alert_task
-            break
-    # If there is no task with the same interval, create a new one
-    if existing_task is None:
-        try:
-            new_task = PeriodicTask.objects.create(
-                interval = interval_schedule,
-                name = 'poll_new_alerts_' + str(interval) + '_seconds',
-                task = 'cap_feed.tasks.poll_new_alerts',
-                start_time = timezone.now(),
-                kwargs = json.dumps({"sources": [source]}, cls=SourceEncoder),
-            )
-            new_task.save()
-        except Exception as e:
-            print('Error adding new periodic task', e)
-    # If there is a task with the same interval, add the source to the task
-    else:
-        kwargs = json.loads(existing_task.kwargs)
-        kwargs["sources"].append(source)
-        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
-        existing_task.save()
+    # Create a new PeriodicTask
+    try:
+        new_task = PeriodicTask.objects.create(
+            interval = interval_schedule,
+            name = 'poll_feed_' + feed.url,
+            task = 'cap_feed.tasks.poll_feed',
+            start_time = timezone.now(),
+            kwargs = json.dumps({"url": feed.url}),
+        )
+        new_task.save()
+    except Exception as e:
+        print('Error while adding new PeriodicTask', e)
 
-# Removes source from a periodic task
-def remove_source(source):
-    interval = source.polling_interval
-    interval_schedule = IntervalSchedule.objects.filter(every=interval, period='seconds').first()
-    existing_task = PeriodicTask.objects.filter(interval=interval_schedule, task="cap_feed.tasks.poll_new_alerts").first()
-    # If there is no task with the same interval, thats a problem
-    if existing_task is None:
-        print("There is no periodic task with the same interval")
-    # If there is a task with the same interval, remove the source from the task
-    else:
-        kwargs = json.loads(existing_task.kwargs)
-        for kwarg_source in kwargs["sources"]:
-            if kwarg_source['url'] == source.url:
-                source_to_remove = kwarg_source
-                break
-        kwargs["sources"].remove(source_to_remove)
-        existing_task.kwargs = json.dumps(kwargs, cls=SourceEncoder)
-        existing_task.save()
-        if kwargs == {"sources": []}:
-            existing_task.delete()
+# Removes task to poll feed
+def remove_task(feed):
+    try:
+        existing_task = PeriodicTask.objects.get(name='poll_feed_' + feed.url)
+        existing_task.delete()
+    except PeriodicTask.DoesNotExist as e:
+        print('Error while removing unknown PeriodicTask', e)
 
-def update_source(source, previous_url, previous_interval):
-    # Remove the source with old configurations
-    new_url = source.url
-    new_interval = source.polling_interval
-    source.url = previous_url
-    source.polling_interval = previous_interval
-    # Remove entry from database
-    source.delete()
-    # Add the updated source again
-    source.url = new_url
-    source.polling_interval = new_interval
-    add_source(source)
+# Update task to poll feed
+def update_task(feed, old_url, old_interval):
+    if feed.url != old_url or feed.polling_interval != old_interval:
+        remove_task(feed)
+        add_task(feed)

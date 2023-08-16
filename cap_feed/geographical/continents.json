@@ -1,27 +1,3 @@
-[
-  {
-    "id": 0,
-    "name": "Africa"
-  },
-  {
-    "id": 1,
-    "name": "Asia"
-  },
-  {
-    "id": 2,
-    "name": "Americas"
-  },
-  {
-    "id": 3,
-    "name": "Europe"
-  },
-  {
-    "id": 4,
-    "name": "Oceania"
-  },
-  {
-    "id": 5,
-    "name": "Antarctica"
-  }
-]
-  
+version https://git-lfs.github.com/spec/v1
+oid sha256:459c1a0c60bd4b7002523db9d0eb42d8f64d0ad3dd184e4e257383796381a856
+size 294

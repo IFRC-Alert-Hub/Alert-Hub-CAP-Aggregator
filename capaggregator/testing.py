@@ -34,6 +34,8 @@ if 'CODESPACE_NAME' in os.environ:
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django_celery_results',
     'django_celery_beat',
     'cap_feed.apps.CapFeedConfig',
@@ -44,8 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
-    'corsheaders',
-    'storages'
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
@@ -156,19 +157,25 @@ result_backend = 'django-db'
 cache_backend = 'django-cache'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+ASGI_APPLICATION = "capaggregator.asgi.application"
+
 CORS_ALLOWED_ORIGINS = [
 "http://localhost:3000",
 "http://localhost:8000",
 "http://127.0.0.1:9000"
 ]
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [os.environ.get("REDIS_URL")],
+        }
+    },
+}
 
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get("REDIS_URL"),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
     }
 }

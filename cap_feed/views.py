@@ -1,27 +1,59 @@
-import cap_feed.data_injector as dl
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template import loader
-from .models import Alert, Source
+from .models import Alert, Feed, LanguageInfo
 
-import cap_feed.alert_processor as ap
+from cap_feed.tasks import inject_data, delete_data
 
 
 
 def index(request):
-    try:
-        dl.inject_geographical_data()
-        if Source.objects.count() == 0:
-            dl.inject_sources()
-        #ap.remove_expired_alerts()
-        #ap.poll_new_alerts([])
-    except Exception as e:
-        print(e)
-        return HttpResponse(f"Error while injecting data {e}")
-
     latest_alert_list = Alert.objects.order_by("-sent")[:10]
     template = loader.get_template("cap_feed/index.html")
     context = {
         "latest_alert_list": latest_alert_list,
     }
     return HttpResponse(template.render(context, request))
-  
+
+def clear(request):
+    try:
+        delete_data.apply_async(args=[], kwargs={}, queue='inject')
+    except:
+        print('Celery not running')
+    return HttpResponse("Done")
+
+def inject(request):
+    try:
+        inject_data.apply_async(args=[], kwargs={}, queue='inject')
+    except:
+        print('Celery not running')
+    return HttpResponse("Done")
+
+def get_feeds(request):
+    feeds = Feed.objects.filter(enable_rebroadcast=True)
+    response = {'sources' : []}
+    for feed in feeds:
+
+        language_set = []
+        for info in LanguageInfo.objects.filter(feed=feed):
+            language_set.append(
+                {
+                    'name' : info.name,
+                    'code' : info.language,
+                    'logo' : info.logo
+                }
+            )
+
+        response['sources'].append(
+            {'source' : {
+                'sourceId': feed.id,
+                'byLanguage' : language_set,
+                'authorName': feed.author_name,
+                'authorEmail': feed.author_email,
+                'sourceIsOfficial': feed.official,
+                'capAlertFeed': feed.url,
+                'capAlertFeedStatus': 'testing',
+                'authorityCountry': feed.country.iso3,
+                }
+            }
+        )
+    return JsonResponse(response, json_dumps_params={'indent': 2, 'ensure_ascii': False})

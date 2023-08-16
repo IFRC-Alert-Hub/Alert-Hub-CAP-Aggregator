@@ -1,2 +1,5 @@
 python manage.py migrate
-daphne -b 0.0.0.0 -p 8000 capaggregator.asgi:application & celery -A capaggregator worker -l info --pool=solo & celery -A capaggregator beat -l info
+python manage.py collectstatic --noinput
+gunicorn --workers 2 --threads 4 --timeout 3000 --access-logfile \
+    '-' --error-logfile '-' --bind=0.0.0.0:8000 \
+     --chdir=/home/site/wwwroot capaggregator.wsgi & celery -A capaggregator worker -l info -c 4 & celery -A capaggregator beat -l info
