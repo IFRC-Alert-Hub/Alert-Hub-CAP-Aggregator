@@ -119,3 +119,4 @@ class AlertModelTests(TestCase):
             get_alerts(Feed.objects.get(url="test_feed"), {'test_url'})
         assert Alert.objects.count() == previous_alert_count
         assert AlertInfo.objects.count() == previous_alert_info_count
+        

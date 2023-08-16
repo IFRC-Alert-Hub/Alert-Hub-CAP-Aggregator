@@ -56,3 +56,4 @@ def cache_removed_alert(sender, instance, *args, **kwargs):
     }
 
     app.send_task('cache.tasks.remove_cached_alert', args=[], kwargs=alert_data, queue='cache', routing_key='cache.#', exchange='cache')
+    
