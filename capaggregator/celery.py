@@ -19,7 +19,8 @@ app = Celery('capaggregator')
 app.conf.beat_schedule = {
     'remove_expired_alerts':{
         'task': 'cap_feed.tasks.remove_expired_alerts',
-        'schedule': timedelta(minutes=1)
+        'schedule': timedelta(minutes=1),
+        'options:': {'queue': 'default'}
     }
 }
 # Using a string here means the worker doesn't have to serialize
