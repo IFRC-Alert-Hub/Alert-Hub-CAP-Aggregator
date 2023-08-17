@@ -23,6 +23,7 @@ This is a Python web app using the Django framework and the Azure Database for P
     * <a href="#geographical-organisation">Geographical Organisation</a>
     * <a href="#alert-aggregation-process">Alert Aggregation Process</a>
     * <a href="#feed-facade">Feed Facade</a>
+    * <a href="#api-documentation">API Documentation</a>
 * Development
     * <a href="#installation-and-setup">Installation and Setup</a>
     * <a href="#azure-deployment">Azure Deployment</a>
@@ -61,6 +62,18 @@ Deleting a region or continent would delete all countries belonging to them. In 
 Search functions, filters and sortable columns are available when they would be relevant. For example, an admin user could filter feeds by format (e.g., meteoalarm) or search for feeds belonging to a particular country using the search bar on the same page.
 
 The 'Feed logs' section displays any issues or exceptions encountered while polling from different feeds. This feature offers very powerful feedback for admins. It describes the context of the problem (which feed and alert), what the exception is, what the exception means, the exact system error message, and possible solutions for the problem. Logs are kept in the system for 2 weeks and can identify connection problems, format problems, and violations of the CAP-v1.2 specification by alerting sources.
+
+When adding feeds, options to enable rebroadcasting and polling can be set. Only feeds that are enable for rebroadcasting will be returned in the feeds API. The 'ByLanguage' fields can be used to provide different logos or names for a feed in different languages.
+
+## API Documentation
+
+The CAP Aggregator provides a single route for rebroadcasters to directly fetch feed data. The inject route is a convenience feature mainly for testing during development. It will attempt to inject default region data, country data, admin1 data, and feed data. However, it will only do so at each stage if there is currently no entries in the database. For example, no new feeds will be injected if there are 2 feeds already set up in the feed facade.
+
+| Route | Description |
+| --- | --- |
+| feeds/ | Returns all feeds that are currently enabled for rebroadcasting | 
+| inject/ | Injects initial geographical and feed data into the database if they are empty | 
+
 
 ## Installation and Setup
 
@@ -136,7 +149,7 @@ The 'Feed logs' section displays any issues or exceptions encountered while poll
 
     Index page: http://127.0.0.1:8000/  
     Feed facade: http://127.0.0.1:8000/admin/
-10. Start Celery works and the scheduler.  
+10. Start Celery workers and the scheduler.  
     Windows:
     ```
     celery -A capaggregator worker -l info --pool=solo
