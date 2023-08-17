@@ -14,13 +14,6 @@ def index(request):
     }
     return HttpResponse(template.render(context, request))
 
-def clear(request):
-    try:
-        delete_data.apply_async(args=[], kwargs={}, queue='inject')
-    except:
-        print('Celery not running')
-    return HttpResponse("Done")
-
 def inject(request):
     try:
         inject_data.apply_async(args=[], kwargs={}, queue='inject')
