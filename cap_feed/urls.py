@@ -5,6 +5,5 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('feeds/', views.get_feeds, name='feeds'),
-    path('clear/', views.clear, name='clear'),
     path('inject/', views.inject, name='inject'),
 ]

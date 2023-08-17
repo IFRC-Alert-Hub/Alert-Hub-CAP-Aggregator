@@ -1,4 +1,5 @@
 import os
+import csv
 import json
 import requests
 module_dir = os.path.dirname(__file__)  # get current directory
@@ -185,44 +186,35 @@ def inject_admin1s(inject_path):
 # inject feed configurations if not already present
 def inject_feeds():
     if Feed.objects.count() == 0:
-        print('Injecting feeds...')
-        # this could be converted to a fixture
-        feed_data = [
-            ("Meteo France", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-france", "FRA", "atom"),
-            ("Zentralanstalt für Meteorologie and Geodynamik", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-austria", "AUT", "atom"),
-            ("Agencije Republike Slovenije za okolje", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovenia", "SVN", "atom"),
-            ("Slovenský hydrometeorologický ústav", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-slovakia", "SVK", "atom"),
-            ("Israel Meteorological Service", "https://feeds.meteoalarm.org/feeds/meteoalarm-legacy-atom-israel", "ISR", "atom"),
-            ("Tanzania Meteorological Authority", "https://cap-sources.s3.amazonaws.com/tz-tma-en/rss.xml", "TZA", "rss"),
-            ("Meteo Madagascar", "https://cap-sources.s3.amazonaws.com/mg-meteo-en/rss.xml", "MDG", "rss"),
-            ("India Meteorological Department", "https://cap-sources.s3.amazonaws.com/in-imd-en/rss.xml", "IND", "rss"),
-            ("Ghana Meteorological Agency", "https://cap-sources.s3.amazonaws.com/gh-gmet-en/rss.xml", "GHA", "rss"),
-            ("Cameroon Directorate of National Meteorology", "https://cap-sources.s3.amazonaws.com/cm-meteo-en/rss.xml", "CMR", "rss"),
-            ("United States National Weather Service", "https://api.weather.gov/alerts/active", "USA", "nws_us"),
-            ("Hydrometcenter of Russia", "https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml", "RUS", "atom"),
-            ("Uruguayan Institute of Meteorology", "https://www.inumet.gub.uy/reportes/riesgo/rss.xml", "URY", "rss"),
-        ]
+        file_path = os.path.join(module_dir, 'feeds.csv')
+        with open(file_path, encoding='utf-8') as file:
+            csvReader = csv.reader(file, delimiter=',')
+            print('Injecting feeds...')
+            first_line = True
+            for feed_entry in csvReader:
+                if first_line:
+                    first_line = False
+                    continue
+                try:
+                    feed = Feed()
+                    feed.url = feed_entry[0]
+                    feed.country = Country.objects.get(iso3 = feed_entry[1])
+                    feed.format = feed_entry[2]
+                    feed.polling_interval = 60
+                    feed.enable_polling = True
+                    feed.enable_rebroadcast = True
+                    feed.status = 'active'
+                    feed.author_name = 'Unknown'
+                    feed.author_email = 'Unknown'
+                    feed.official = True
+                    feed.save()
 
-        for feed_entry in feed_data:
-            try:
-                feed = Feed()
-                feed.url = feed_entry[1]
-                feed.country = Country.objects.get(iso3 = feed_entry[2])
-                feed.format = feed_entry[3]
-                feed.polling_interval = 60
-                feed.enable_polling = True
-                feed.enable_rebroadcast = True
-                feed.status = 'operating'
-                feed.author_name = 'Unknown'
-                feed.author_email = 'Unknown'
-                feed.official = True
-                feed.save()
-
-                language_info = LanguageInfo()
-                language_info.feed = feed
-                language_info.name = feed_entry[0]
-                language_info.language = 'en'
-                language_info.save()
-                
-            except Exception as e:
-                print(f'Error injecting feed {feed.id}: {e}')
+                    language_info = LanguageInfo()
+                    language_info.feed = feed
+                    language_info.name = feed_entry[3]
+                    language_info.language = feed_entry[4]
+                    language_info.logo = feed_entry[5]
+                    language_info.save()
+                    
+                except Exception as e:
+                    print(f'Error injecting feed {feed.id}: {e}')
