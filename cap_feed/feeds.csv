@@ -44,6 +44,13 @@ https://cap-sources.s3.amazonaws.com/py-dmh-es/rss.xml,PRY,rss,Departamento de M
 https://cap-sources.s3.amazonaws.com/ly-nmc-en/rss.xml,LBY,rss,National Meteorological Center,en,https://alert-hub.s3.amazonaws.com/images/ly-nmc-en.png
 https://cap-sources.s3.amazonaws.com/zm-zmd-en/rss.xml,ZMB,rss,Zambia Meteorological Department,en,https://alert-hub.s3.amazonaws.com/images/zm-zmd-en.png
 https://cap-sources.s3.amazonaws.com/zw-msd-en/rss.xml,ZWE,rss,Meteorological Services Department,en,https://alert-hub.s3.amazonaws.com/images/zw-msd-en.png
+https://cap-sources.s3.amazonaws.com/ne-meteo-fr/rss.xml,NER,rss,Direction de la Météorologie Nationale,fr,https://alert-hub.s3.amazonaws.com/images/ne-meteo-fr.png
+https://cap-sources.s3.amazonaws.com/ci-sodexam-fr/rss.xml,CIV,rss,Société d'Exploitation et de Développement Aéroportuaire,fr,https://alert-hub.s3.amazonaws.com/images/ci-sodexam-fr.png
+https://cap-sources.s3.amazonaws.com/ml-meteo-fr/rss.xml,MLI,rss,Direction Nationale de la Météorologie,fr,https://alert-hub.s3.amazonaws.com/images/ml-meteo-fr.png
+https://cap-sources.s3.amazonaws.com/gn-dnm-fr/rss.xml,GIN,rss,Direction Nationale de la Météorologie,fr,https://alert-hub.s3.amazonaws.com/images/gn-dnm-fr.png
+https://cap-sources.s3.amazonaws.com/gw-inm-fr/rss.xml,GNB,rss,Instituto Nacional de Meteorologia,fr,https://alert-hub.s3.amazonaws.com/images/gw-inm-fr.png
+https://cap-sources.s3.amazonaws.com/dj-meteo-fr/rss.xml,DJI,rss,Direction de la Météorologie Nationale,fr,https://alert-hub.s3.amazonaws.com/images/dj-meteo-fr.png
+https://cap-sources.s3.amazonaws.com/ec-inamhi-es/rss.xml,ECU,rss,Instituto Nacional de Meteorología e Hidrología,es,https://alert-hub.s3.amazonaws.com/images/ec-inamhi-es.png
 https://api.weather.gov/alerts/active,USA,nws_us,US National Weather Service,en-US,https://alert-hub.s3.amazonaws.com/images/us-noaa-nws-en.png
 https://meteoinfo.ru/hmc-output/cap/cap-feed/en/atom.xml,RUS,atom,Hydrometcenter of Russia,en,https://alert-hub.s3.amazonaws.com/images/ru-roshydromet-en.png
 https://meteoinfo.ru/hmc-output/cap/cap-feed/ru/atom.xml,RUS,atom,Гидрометцентр России / Росгидромет,ru,https://alert-hub.s3.amazonaws.com/images/ru-roshydromet-en.png
@@ -56,5 +63,4 @@ http://publicalert.pagasa.dost.gov.ph/feeds/,PHL,rss,Philippine Atmospheric Geop
 https://ncm.gov.sa/Ar/alert/Pages/feedalerts.aspx,SAU,rss,National Center for Meteorology,en,https://alert-hub.s3.amazonaws.com/images/sa-ncm-en.png
 https://www.tmd.go.th/api/xml/CAP,THA,rss,Thailand Meteorological Department,th-TH,https://alert-hub.s3.amazonaws.com/images/th-tmd-th.png
 https://www.tmd.go.th/en/api/xml/CAP,rss,Thailand Meteorological Department,en-US,https://alert-hub.s3.amazonaws.com/images/th-tmd-th.png
-https://cap-sources.s3.amazonaws.com/ne-meteo-fr/rss.xml,NER,rss,Direction de la Météorologie Nationale,fr,https://alert-hub.s3.amazonaws.com/images/ne-meteo-fr.png
-https://cap-sources.s3.amazonaws.com/ci-sodexam-fr/rss.xml,CIV,rss,Société d'Exploitation et de Développement Aéroportuaire,fr,https://alert-hub.s3.amazonaws.com/images/ci-sodexam-fr.png
+https://alerts.weather.gov.hk/V1/cap_atom.xml,HKG,atom,Hong Kong Observatory,en,https://alert-hub.s3.amazonaws.com/images/cn-hko-en.png

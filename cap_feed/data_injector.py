@@ -185,36 +185,43 @@ def inject_admin1s(inject_path):
 
 # inject feed configurations if not already present
 def inject_feeds():
-    if Feed.objects.count() == 0:
-        file_path = os.path.join(module_dir, 'feeds.csv')
-        with open(file_path, encoding='utf-8') as file:
-            csvReader = csv.reader(file, delimiter=',')
-            print('Injecting feeds...')
-            first_line = True
-            for feed_entry in csvReader:
-                if first_line:
-                    first_line = False
+    file_path = os.path.join(module_dir, 'feeds.csv')
+    with open(file_path, encoding='utf-8') as file:
+        csvReader = csv.reader(file, delimiter=',')
+        print('Injecting feeds...')
+        unique_countries = set()
+        feed_counter = 0
+        first_line = True
+        for feed_entry in csvReader:
+            if first_line:
+                first_line = False
+                continue
+            try:
+                feed = Feed()
+                feed.url = feed_entry[0]
+                feed.country = Country.objects.get(iso3 = feed_entry[1])
+                feed_counter += 1
+                unique_countries.add(feed_entry[1])
+                if Feed.objects.filter(url = feed.url).first():
                     continue
-                try:
-                    feed = Feed()
-                    feed.url = feed_entry[0]
-                    feed.country = Country.objects.get(iso3 = feed_entry[1])
-                    feed.format = feed_entry[2]
-                    feed.polling_interval = 60
-                    feed.enable_polling = True
-                    feed.enable_rebroadcast = True
-                    feed.status = 'active'
-                    feed.author_name = 'Unknown'
-                    feed.author_email = 'Unknown'
-                    feed.official = True
-                    feed.save()
+                feed.format = feed_entry[2]
+                feed.polling_interval = 60
+                feed.enable_polling = True
+                feed.enable_rebroadcast = True
+                feed.status = 'active'
+                feed.author_name = 'Unknown'
+                feed.author_email = 'Unknown'
+                feed.official = True
+                feed.save()
 
-                    language_info = LanguageInfo()
-                    language_info.feed = feed
-                    language_info.name = feed_entry[3]
-                    language_info.language = feed_entry[4]
-                    language_info.logo = feed_entry[5]
-                    language_info.save()
-                    
-                except Exception as e:
-                    print(f'Error injecting feed {feed.id}: {e}')
+                language_info = LanguageInfo()
+                language_info.feed = feed
+                language_info.name = feed_entry[3]
+                language_info.language = feed_entry[4]
+                language_info.logo = feed_entry[5]
+                language_info.save()
+                
+            except Exception as e:
+                print(f'Error injecting feed {feed.id}: {e}')
+        
+        print(f'Injected {feed_counter} feeds for {len(unique_countries)} unique countries')
