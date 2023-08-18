@@ -1,7 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 
-from cap_feed.models import Alert
+from cap_feed.models import Alert, ExpiredAlert
 from django.utils import timezone
 from cap_feed.formats.cap_xml import get_alert
 from cap_feed.formats.utils import convert_datetime, log_requestexception, log_attributeerror
@@ -23,18 +23,23 @@ def get_alerts_atom(feed, ns):
     root = ET.fromstring(response.content)
     for alert_entry in root.findall('atom:entry', ns):
         try:
-            # skip if alert is expired
-            x = alert_entry.find('cap:expires', ns)
-            # if x: IS NOT EQUIVALENT
-            if not x is None:
-                expires = convert_datetime(x.text)
-                if expires < timezone.now():
-                    continue
-            # skip if alert already exists
             url = alert_entry.find('atom:id', ns).text
+            # skip if alert has already been identified as expired
+            if ExpiredAlert.objects.filter(url=url).exists():
+                continue
+            # skip if alert already exists
             if Alert.objects.filter(url=url).exists():
                 alert_urls.add(url)
                 continue
+            # skip if alert is expired
+            x = alert_entry.find('cap:expires', ns)
+            if not x is None:
+                expires = convert_datetime(x.text)
+                if expires < timezone.now():
+                    expired_alert = ExpiredAlert()
+                    expired_alert.url = url
+                    expired_alert.feed = feed
+                    continue
             alert_response = requests.get(url)
         except requests.exceptions.RequestException as e:
             log_requestexception(feed, e, url)

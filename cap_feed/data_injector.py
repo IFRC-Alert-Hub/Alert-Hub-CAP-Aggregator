@@ -222,6 +222,8 @@ def inject_feeds():
                 language_info.save()
                 
             except Exception as e:
+                print(feed_entry[0])
+                print(feed_entry[1])
                 print(f'Error injecting feed {feed.id}: {e}')
         
         print(f'Injected {feed_counter} feeds for {len(unique_countries)} unique countries')

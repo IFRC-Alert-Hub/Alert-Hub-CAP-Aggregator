@@ -59,8 +59,7 @@ https://environment.data.gov.uk/cap/flood-alerts.atom,GBR,atom,UK Environment Ag
 https://signature.bmkg.go.id/alert/public/rss.xml,IDN,rss,Badán Klimatologi dan Geofisika Meteorologi,id,https://alert-hub.s3.amazonaws.com/images/id-bmkg-id.png
 https://signature.bmkg.go.id/alert/public/en/rss.xml,IDN,rss,Agency for Meteorology Climatology and Geophysics,en,https://alert-hub.s3.amazonaws.com/images/id-bmkg-id.png
 https://apiprevmet3.inmet.gov.br/avisos/rss,BRA,rss,Instituto Nacional de Meteorologia,pt-BR,https://alert-hub.s3.amazonaws.com/images/br-inmet-pt.png
-http://publicalert.pagasa.dost.gov.ph/feeds/,PHL,rss,Philippine Atmospheric Geophysical and Astronomical Services Administration,en,https://alert-hub.s3.amazonaws.com/images/ph-pagasa-en.png
 https://ncm.gov.sa/Ar/alert/Pages/feedalerts.aspx,SAU,rss,National Center for Meteorology,en,https://alert-hub.s3.amazonaws.com/images/sa-ncm-en.png
 https://www.tmd.go.th/api/xml/CAP,THA,rss,Thailand Meteorological Department,th-TH,https://alert-hub.s3.amazonaws.com/images/th-tmd-th.png
-https://www.tmd.go.th/en/api/xml/CAP,rss,Thailand Meteorological Department,en-US,https://alert-hub.s3.amazonaws.com/images/th-tmd-th.png
-https://alerts.weather.gov.hk/V1/cap_atom.xml,HKG,atom,Hong Kong Observatory,en,https://alert-hub.s3.amazonaws.com/images/cn-hko-en.png
+https://www.tmd.go.th/en/api/xml/CAP,THA,rss,Thailand Meteorological Department,en-US,https://alert-hub.s3.amazonaws.com/images/th-tmd-th.png
+https://alerts.weather.gov.hk/V1/cap_atom.xml,CHN,atom,Hong Kong Observatory,en,https://alert-hub.s3.amazonaws.com/images/cn-hko-en.png

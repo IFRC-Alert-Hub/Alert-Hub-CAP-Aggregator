@@ -83,6 +83,8 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     ```
     git clone https://github.com/IFRC-Alert-Hub/Alert-Hub-CAP-Aggregator.git
     git checkout develop
+    git lfs fetch
+    git lfs pull
     ```
 2. Set up and activate a virtual environment.  
     Windows:
