@@ -124,6 +124,18 @@ class Feed(models.Model):
         else:
             update_task(self, self.__old_url, self.__old_polling_interval)
         super(Feed, self).save(force_insert, force_update, *args, **kwargs)
+
+class ExpiredAlert(models.Model):
+    # Set expire time to 1 week
+    def default_expire():
+        return timezone.now() + timedelta(weeks=1)
+    
+    url = models.CharField(unique=True, max_length=255)
+    feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
+    expires = models.DateTimeField(default=default_expire)
+
+    def __str__(self):
+        return self.url
     
 class Alert(models.Model):
     STATUS_CHOICES = [

@@ -1,7 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 
-from cap_feed.models import Alert
+from cap_feed.models import Alert, ExpiredAlert
 from cap_feed.formats.cap_xml import get_alert
 from cap_feed.formats.utils import log_requestexception, log_attributeerror
 
@@ -22,8 +22,11 @@ def get_alerts_rss(feed, ns):
     root = ET.fromstring(response.content)
     for alert_entry in root.find('channel').findall('item'):
         try:
-            # skip if alert already exists
             url = alert_entry.find('link').text
+            # skip if alert has already been identified as expired
+            if ExpiredAlert.objects.filter(url=url).exists():
+                continue
+            # skip if alert already exists
             if Alert.objects.filter(url=url).exists():
                 alert_urls.add(url)
                 continue

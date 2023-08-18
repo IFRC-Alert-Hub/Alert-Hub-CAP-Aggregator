@@ -20,7 +20,12 @@ app.conf.beat_schedule = {
     'remove_expired_alerts':{
         'task': 'cap_feed.tasks.remove_expired_alerts',
         'schedule': timedelta(minutes=1),
-        'options:': {'queue': 'default'}
+        'options': {'queue': 'default'}
+    },
+    'remove_expired_alert_records':{
+        'task': 'cap_feed.tasks.remove_expired_alert_records',
+        'schedule': timedelta(days=1),
+        'options': {'queue': 'default'}
     }
 }
 # Using a string here means the worker doesn't have to serialize
