@@ -1,5 +1,5 @@
 import json
-from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog
+from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog, ExpiredAlert
 from django.utils import timezone
 from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror
@@ -48,6 +48,10 @@ def get_alert(url, alert_root, feed, ns):
             if (x := alert_info_entry.find('cap:onset', ns)) is not None: alert_info.onset = convert_datetime(x.text)
             if (x := alert_info_entry.find('cap:expires', ns)) is not None: alert_info.expires = convert_datetime(x.text)
             if alert_info.expires < timezone.now():
+                expired_alert = ExpiredAlert()
+                expired_alert.url = alert.url
+                expired_alert.feed = alert.feed
+                expired_alert.save()
                 continue
             if (x := alert_info_entry.find('cap:senderName', ns)) is not None: alert_info.sender_name = x.text
             if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
@@ -83,7 +87,7 @@ def get_alert(url, alert_root, feed, ns):
                     alert_info_area_polygon.alert_info_area = alert_info_area
                     alert_info_area_polygon.value = alert_info_area_polygon_entry.text
                     alert_info_area_polygon.save()
-                    points = [point.split(',') for point in alert_info_area_polygon_entry.text.split(' ')]
+                    points = [point.split(',') for point in alert_info_area_polygon_entry.text.strip().split(' ')]
                     polygons.append(Polygon([[point[1],point[0]] for point in points]))
 
                 # check polygon intersection with admin1s

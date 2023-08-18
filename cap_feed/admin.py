@@ -64,7 +64,7 @@ class LanguageInfoInline(MinValidatedInline, admin.StackedInline):
 
 class FeedAdmin(admin.ModelAdmin):
     list_display = ["name", "country", "url", "format", "polling_interval"]
-    list_filter = ["format", "polling_interval"]
+    list_filter = ["format", "country__region"]
     search_fields = ["url", "country"]
     inlines = [LanguageInfoInline]
 
