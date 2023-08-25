@@ -1,8 +1,8 @@
 import json
-from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, FeedLog, ExpiredAlert
+from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, ExpiredAlert
 from django.utils import timezone
 from django.db import IntegrityError
-from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror
+from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror, log_valueerror
 from shapely.geometry import Polygon, MultiPolygon
 
 
@@ -146,8 +146,9 @@ def get_alert(url, alert_root, feed, ns):
     except AttributeError as e:
         log_attributeerror(feed, e, url)
     except IntegrityError as e:
-        if 'duplicate key value' in str(e):
-            pass
-        log_integrityerror(feed, e, url)
+        if not 'duplicate key value' in str(e):
+            log_integrityerror(feed, e, url)
+    except ValueError as e:
+        log_valueerror(feed, e, url)
 
     return alert.url, False

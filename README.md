@@ -83,10 +83,12 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     ```
     git clone https://github.com/IFRC-Alert-Hub/Alert-Hub-CAP-Aggregator.git
     git checkout develop
-    git lfs fetch
-    git lfs pull
     ```
-2. Set up and activate a virtual environment.  
+2. Download large datasets.  
+   The folder /cap_feed/geographical should contain 5 files of around 400MB in total.  
+   Download files from dropbox [link](https://www.dropbox.com/sh/hahhuwar0bdz2ip/AAAY5HppUf98NuHmViUs9USHa?dl=0) and place these files at the correct location.
+    
+4. Set up and activate a virtual environment.  
     Windows:
     ```
     python -m venv venv
@@ -97,11 +99,11 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     python3 -m venv venv
     source venv/bin/activate
     ```
-3. Install packages with pip.
+5. Install packages with pip.
     ```
     pip install -r requirements.txt
     ```
-4. Setup a PostGreSQL database and check it works.  
+6. Setup a PostGreSQL database and check it works.  
     Linux:
     ```
     sudo apt install postgresql postgresql-contrib
@@ -112,7 +114,7 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
 
     sudo service postgresql status
     ```
-5. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
+7. Create .env in the same directory as manage.py with your credentials. You can generate a secret key at https://djecrety.ir/.  
     Example:
     ```
     DBNAME=cap_aggregator
@@ -124,12 +126,12 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     REDIS_URL=redis://localhost:6379
     ```
 
-6. Verify the progress so far by running some tests successfully.
+8. Verify the progress so far by running some tests successfully.
     ```
     python manage.py migrate
     python manage.py test
     ```
-7. Setup a Redis server and check it works.  
+9. Setup a Redis server and check it works.  
     Windows:
     ```
     docker run -p 6379:6379 -d redis:5
@@ -141,17 +143,17 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
 
     redis-cli ping
     ```
-8. Add admin credentials and start the Django server.
+10. Add admin credentials and start the Django server.
     ```
     python manage.py createsuperuser
     python manage.py runserver
     ```
-9. Check the Django app works so far.  
+11. Check the Django app works so far.  
     Initial geographical data and feeds should be loaded and visible in the feed facade after refreshing the index page.
 
     Index page: http://127.0.0.1:8000/  
     Feed facade: http://127.0.0.1:8000/admin/
-10. Start Celery workers and the scheduler.  
+12. Start Celery workers and the scheduler.  
     Windows:
     ```
     celery -A capaggregator worker -l info --pool=solo
@@ -162,7 +164,7 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     celery -A capaggregator worker -l info -c 4
     celery -A capaggregator beat -l info
     ```
-11. Alerts are now being aggregated!  
+13. Alerts are now being aggregated!  
     Check the index page or feed facade for alert entries.
 
 ## Azure Deployment
@@ -183,7 +185,8 @@ The CAP Aggregator uses three main Azure components: Web App(App Service), Postg
     Change container access levels to allow connection to the containers  
     Find the storage account name and key under 'Access keys' for the next step.
 4. Upload geographical data to pre-populate the database
-    Upload the 'geographical' folder under 'cap_feed' to the 'media' container in Azure storage.
+    Upload the 'geographical' folder under 'cap_feed' to the 'media' container in Azure storage.  
+    Follow instructions from local installation to download these files if they are missing.
 
 4. Configure the Web App  
     Under 'Configuration' and 'Application settings' add new application settings

@@ -13,27 +13,27 @@ from iso639 import Lang, iter_langs
 
 
 class Continent(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField()
 
     def __str__(self):
         return self.name
 
 class Region(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField()
     polygon = models.TextField(blank=True, null=True)
-    centroid = models.CharField(max_length=255, blank=True, null=True)
+    centroid = models.CharField(blank=True, null=True)
 
     def __str__(self):
         return self.name
 
 class Country(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField()
     iso3 = models.CharField(unique=True, validators=[MinValueValidator(3), MaxValueValidator(3)])
     polygon = models.TextField(blank=True, null=True)
     multipolygon = models.TextField(blank=True, null=True)
     region = models.ForeignKey(Region, on_delete=models.CASCADE)
     continent = models.ForeignKey(Continent, on_delete=models.CASCADE)
-    centroid = models.CharField(max_length=255, blank=True, null=True)
+    centroid = models.CharField(blank=True, null=True)
 
     def __str__(self):
         return self.iso3 + ' ' + self.name
@@ -44,7 +44,7 @@ def create_unknown_admin1(sender, instance, created, **kwargs):
         Admin1.objects.get_or_create(id=-instance.id, name='Unknown', country=instance)
     
 class Admin1(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField()
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     polygon = models.TextField(blank=True, null=True)
     multipolygon = models.TextField(blank=True, null=True)
@@ -72,9 +72,9 @@ class LanguageInfo(models.Model):
     LANGUAGE_CHOICES = [(lg.pt1, lg.pt1 + ' - ' + lg.name) for lg in iter_langs() if lg.pt1]
 
     feed = models.ForeignKey('Feed', on_delete=models.CASCADE)
-    name = models.CharField(max_length=255)
+    name = models.CharField()
     language = models.CharField(choices=LANGUAGE_CHOICES, default='en')
-    logo = models.CharField(max_length=255, blank=True, null=True)
+    logo = models.CharField(blank=True, null=True)
 
 class Feed(models.Model):
     INTERVAL_CHOICES = []
@@ -94,7 +94,7 @@ class Feed(models.Model):
         ('unusable', 'unusable')
     ]
 
-    url = models.CharField(unique=True, max_length=255)
+    url = models.CharField(unique=True)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     format = models.CharField(choices=FORMAT_CHOICES)
     polling_interval = models.IntegerField(choices=INTERVAL_CHOICES)
@@ -130,7 +130,7 @@ class ExpiredAlert(models.Model):
     def default_expire():
         return timezone.now() + timedelta(weeks=1)
     
-    url = models.CharField(unique=True, max_length=255)
+    url = models.CharField(unique=True)
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     expires = models.DateTimeField(default=default_expire)
 
@@ -163,18 +163,18 @@ class Alert(models.Model):
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     admin1s = models.ManyToManyField(Admin1, through='AlertAdmin1')
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
-    url = models.CharField(max_length=255, unique=True)
+    url = models.CharField(unique=True)
 
-    identifier = models.CharField(max_length=255)
-    sender = models.CharField(max_length=255)
+    identifier = models.CharField()
+    sender = models.CharField()
     sent = models.DateTimeField()
     status = models.CharField(choices = STATUS_CHOICES)
     msg_type = models.CharField(choices = MSG_TYPE_CHOICES)
-    source = models.CharField(max_length=255, blank=True, default='')
+    source = models.CharField(blank=True, default='')
     scope = models.CharField(choices = SCOPE_CHOICES)
-    restriction = models.CharField(max_length=255, blank=True, default='')
+    restriction = models.CharField(blank=True, default='')
     addresses = models.TextField(blank=True, default='')
-    code = models.CharField(max_length=255, blank=True, default='')
+    code = models.CharField(blank=True, default='')
     note = models.TextField(blank=True, default='')
     references = models.TextField(blank=True, default='')
     incidents = models.TextField(blank=True, default='')
@@ -307,26 +307,26 @@ class AlertInfo(models.Model):
 
     alert = models.ForeignKey(Alert, on_delete=models.CASCADE, related_name='infos')
     
-    language = models.CharField(max_length=255, blank=True, default='en-US')
+    language = models.CharField(blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
-    event = models.CharField(max_length=255)
+    event = models.CharField()
     response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, blank=True, default='')
     urgency = models.CharField(choices = URGENCY_CHOICES)
     severity = models.CharField(choices = SEVERITY_CHOICES)
     certainty = models.CharField(choices = CERTAINTY_CHOICES)
     audience = models.CharField(blank=True, default='')
-    event_code = models.CharField(max_length=255, blank=True, default='')
+    event_code = models.CharField(blank=True, default='')
     #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
     effective = models.DateTimeField(blank=True, default=timezone.now)
     onset = models.DateTimeField(blank=True, null=True)
     expires = models.DateTimeField(blank=True, default=default_expire)
-    sender_name = models.CharField(max_length=255, blank=True, default='')
-    headline = models.CharField(max_length=255, blank=True, default='')
+    sender_name = models.CharField(blank=True, default='')
+    headline = models.CharField(blank=True, default='')
     description = models.TextField(blank=True, null=True, default=None)
     instruction = models.TextField(blank=True, null=True, default=None)
     web = models.URLField(blank=True, null=True)
-    contact = models.CharField(max_length=255, blank=True, default='')
-    parameter = models.CharField(max_length=255, blank=True, default='')
+    contact = models.CharField(blank=True, default='')
+    parameter = models.CharField(blank=True, default='')
 
     def __str__(self):
         return str(self.alert) + ' ' + self.language
@@ -366,7 +366,7 @@ class AlertInfo(models.Model):
 class AlertInfoParameter(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
 
-    value_name = models.CharField(max_length=255)
+    value_name = models.CharField()
     value = models.TextField()
 
     def to_dict(self):
@@ -437,8 +437,8 @@ class AlertInfoAreaCircle(models.Model):
 class AlertInfoAreaGeocode(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)
 
-    value_name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255)
+    value_name = models.CharField()
+    value = models.CharField()
 
     def to_dict(self):
         alert_info_area_geocode_dict = dict()
@@ -448,11 +448,11 @@ class AlertInfoAreaGeocode(models.Model):
     
 class FeedLog(models.Model):
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
-    exception = models.CharField(max_length=255, default='exception')
+    exception = models.CharField(default='exception')
     error_message = models.TextField(default='')
     description = models.TextField(default='')
     response = models.TextField(default='')
-    alert_url = models.CharField(max_length=255, blank=True, default='')
+    alert_url = models.CharField(blank=True, default='')
     timestamp = models.DateTimeField(default=timezone.now)
     notes = models.TextField(blank=True, default='')
 

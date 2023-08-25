@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from cap_feed.models import Alert, ExpiredAlert
 from cap_feed.formats.cap_xml import get_alert
-from cap_feed.formats.utils import log_requestexception, log_attributeerror
+from cap_feed.formats.utils import log_requestexception, log_attributeerror, log_valueerror
 
 
 
@@ -36,6 +36,9 @@ def get_alerts_rss(feed, ns):
             valid_poll = False
         except AttributeError as e:
             log_attributeerror(feed, e, url)
+            valid_poll = False
+        except ValueError as e:
+            log_valueerror(feed, e, url)
             valid_poll = False
         else:
             # navigate alert
