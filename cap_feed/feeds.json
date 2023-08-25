@@ -1224,24 +1224,6 @@
         "format": "rss"
     },
     {
-        "sourceId": "sa-ncm-ar",
-        "name": "Saudi Arabia: المركز الوطني للأرصاد",
-        "iso3": "SAU",
-        "language": "Arabic",
-        "picUrl": "https://alert-hub.s3.amazonaws.com/images/sa-ncm-ar.png",
-        "capAlertFeed": "https://ncm.gov.sa/Ar/alert/Pages/feedalerts.aspx?language=ar",
-        "format": "rss"
-    },
-    {
-        "sourceId": "sa-ncm-en",
-        "name": "Saudi Arabia: National Center for Meteorology",
-        "iso3": "SAU",
-        "language": "English",
-        "picUrl": "https://alert-hub.s3.amazonaws.com/images/sa-ncm-en.png",
-        "capAlertFeed": "https://ncm.gov.sa/Ar/alert/Pages/feedalerts.aspx",
-        "format": "rss"
-    },
-    {
         "sourceId": "sn-anacim-en",
         "name": "Senegal: National Agency of Civil Aviation and Meteorology",
         "iso3": "SEN",
@@ -1483,24 +1465,6 @@
         "picUrl": "https://alert-hub.s3.amazonaws.com/images/ug-unma-lg.png",
         "capAlertFeed": "https://cap-sources.s3.amazonaws.com/ug-unma-lg/rss.xml",
         "format": "rss"
-    },
-    {
-        "sourceId": "us-noaa-nws-en",
-        "name": "United States: National Oceanic and Atmospheric Administration (NOAA), National Weather Service",
-        "iso3": "USA",
-        "language": "English",
-        "picUrl": "https://alert-hub.s3.amazonaws.com/images/us-noaa-nws-en.png",
-        "capAlertFeed": "https://alerts.weather.gov/cap/us.php?x=0",
-        "format": "atom"
-    },
-    {
-        "sourceId": "us-noaa-mzus-en",
-        "name": "United States: National Oceanic and Atmospheric Administration (NOAA), National Weather Service - Marine Zones",
-        "iso3": "USA",
-        "language": "English",
-        "picUrl": "https://alert-hub.s3.amazonaws.com/images/us-noaa-nws-en.png",
-        "capAlertFeed": "https://alerts.weather.gov/cap/mzus.php?x=0",
-        "format": "atom"
     },
     {
         "sourceId": "uy-inumet-es",

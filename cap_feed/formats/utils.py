@@ -41,3 +41,14 @@ def log_integrityerror(feed, e, url):
     + 'For example, the content of a <polygon> tag cannot be empty since the CAP aggregator expects valid data inside this optional tag if it is found.')
     log.alert_url = url
     log.save()
+
+def log_valueerror(feed, e, url):
+    log = FeedLog()
+    log.feed = feed
+    log.exception = 'ValueError'
+    log.error_message = e
+    log.description = 'This is caused by a violation of the Alert schema.'
+    log.response = ('Check that the xml elements of the alert contains valid data according to CAP-v1.2 schema.\n'
+    + 'For example, alphabetic timezone designators such as "Z" must not be used.  The timezone for UTC must be represented as "-00:00".')
+    log.alert_url = url
+    log.save()

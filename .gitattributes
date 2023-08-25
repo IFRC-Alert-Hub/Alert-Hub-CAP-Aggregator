@@ -1,5 +1,0 @@
-continents.json filter=lfs diff=lfs merge=lfs -text
-geoBoundariesCGAZ_ADM1.geojson filter=lfs diff=lfs merge=lfs -text
-ifrc-countries-and-territories.json filter=lfs diff=lfs merge=lfs -text
-ifrc-regions.json filter=lfs diff=lfs merge=lfs -text
-opendatasoft-countries-and-territories.geojson filter=lfs diff=lfs merge=lfs -text

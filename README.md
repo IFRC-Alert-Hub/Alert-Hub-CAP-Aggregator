@@ -83,16 +83,10 @@ The CAP Aggregator provides a single route for rebroadcasters to directly fetch 
     ```
     git clone https://github.com/IFRC-Alert-Hub/Alert-Hub-CAP-Aggregator.git
     git checkout develop
-    git lfs fetch
-    git lfs pull
     ```
-    Try this if you have issues with lfs, then clone.
-    ```
-    set GIT_LFS_SKIP_SMUDGE=1  
-    ```
-2. Check the prepared data is ready.  
+2. Download large datasets.  
    The folder /cap_feed/geographical should contain 5 files of around 400MB in total.  
-   If you had issues downloading these large files from Git LFS, use this dropbox [link](https://www.dropbox.com/sh/hahhuwar0bdz2ip/AAAY5HppUf98NuHmViUs9USHa?dl=0) to replace the folder contents.
+   Download files from dropbox [link](https://www.dropbox.com/sh/hahhuwar0bdz2ip/AAAY5HppUf98NuHmViUs9USHa?dl=0) and place these files at the correct location.
     
 4. Set up and activate a virtual environment.  
     Windows:
@@ -191,7 +185,8 @@ The CAP Aggregator uses three main Azure components: Web App(App Service), Postg
     Change container access levels to allow connection to the containers  
     Find the storage account name and key under 'Access keys' for the next step.
 4. Upload geographical data to pre-populate the database
-    Upload the 'geographical' folder under 'cap_feed' to the 'media' container in Azure storage.
+    Upload the 'geographical' folder under 'cap_feed' to the 'media' container in Azure storage.  
+    Follow instructions from local installation to download these files if they are missing.
 
 4. Configure the Web App  
     Under 'Configuration' and 'Application settings' add new application settings
