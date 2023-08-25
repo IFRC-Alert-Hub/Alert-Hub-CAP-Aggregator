@@ -64,8 +64,8 @@ class LanguageInfoInline(MinValidatedInline, admin.StackedInline):
 
 class FeedAdmin(admin.ModelAdmin):
     list_display = ["name", "country", "url", "format", "polling_interval"]
-    list_filter = ["format", "country__region"]
-    search_fields = ["url", "country"]
+    list_filter = ["format", "country__region", "country"]
+    search_fields = ["url"]
     inlines = [LanguageInfoInline]
 
     def name(self, obj):
@@ -81,7 +81,7 @@ class FeedAdmin(admin.ModelAdmin):
 
 class FeedLogAdmin(admin.ModelAdmin):
     list_display = ["exception", "feed", "description", "alert_url", "timestamp"]
-    list_filter = ["feed"]
+    list_filter = ["exception", "feed"]
     search_fields = ["feed", "exception", "alert_url"]
     fieldsets = [
         ("Log Context", {"fields": ["feed", "alert_url", "timestamp", "notes"]}),
