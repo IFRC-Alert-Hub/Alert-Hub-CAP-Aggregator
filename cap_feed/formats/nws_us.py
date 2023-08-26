@@ -1,10 +1,9 @@
 import requests
 import xml.etree.ElementTree as ET
 
-from cap_feed.models import Alert
-from django.utils import timezone
+from cap_feed.models import Alert, ProcessedAlert
 from cap_feed.formats.cap_xml import get_alert
-from cap_feed.formats.utils import convert_datetime, log_requestexception, log_attributeerror
+from cap_feed.formats.utils import log_requestexception, log_attributeerror, log_valueerror
 
 
 
@@ -12,40 +11,35 @@ from cap_feed.formats.utils import convert_datetime, log_requestexception, log_a
 def get_alerts_nws_us(feed, ns):
     alert_urls = set()
     polled_alerts_count = 0
-    valid_poll = True
+    valid_poll = False
 
     # navigate list of alerts
     try:
         response = requests.get(feed.url, headers={'Accept': 'application/atom+xml'})
     except requests.exceptions.RequestException as e:
         log_requestexception(feed, e, None)
-        valid_poll = False
         return alert_urls, polled_alerts_count, valid_poll
     root = ET.fromstring(response.content)
     for alert_entry in root.findall('atom:entry', ns):
         try:
-            # skip if alert is expired or already exists
-            expires = convert_datetime(alert_entry.find('cap:expires', ns).text)
             url = alert_entry.find('atom:id', ns).text
-            if expires < timezone.now():
-                continue
-            if Alert.objects.filter(url=url).exists():
-                alert_urls.add(url)
-                continue
+            alert_urls.add(url)
             cap_link = alert_entry.find('atom:link', ns).attrib['href']
+            # skip if alert has been processed before
+            if ProcessedAlert.objects.filter(url=url).exists() or Alert.objects.filter(url=url).exists():
+                continue
             alert_response = requests.get(cap_link)
-        except requests.exceptions.RequestException as e:
-            log_requestexception(feed, e, url)
-            valid_poll = False
-        except AttributeError as e:
-            log_attributeerror(feed, e, url)
-            valid_poll = False
-        else:
             # navigate alert
             alert_root = ET.fromstring(alert_response.content)
-            alert_url, polled_alert_count = get_alert(url, alert_root, feed, ns)
+            polled_alert_count = get_alert(url, alert_root, feed, ns)
             polled_alerts_count += polled_alert_count
-            if polled_alert_count:
-                alert_urls.add(alert_url)
+        except requests.exceptions.RequestException as e:
+            log_requestexception(feed, e, url)
+        except AttributeError as e:
+            log_attributeerror(feed, e, url)
+        except ValueError as e:
+            log_valueerror(feed, e, url)
+        else:
+            valid_poll = True
 
     return alert_urls, polled_alerts_count, valid_poll

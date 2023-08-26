@@ -6,6 +6,8 @@ from cap_feed.models import FeedLog
 
 # converts CAP1.2 iso format datetime string to datetime object in UTC timezone
 def convert_datetime(original_datetime):
+    if original_datetime is None:
+        return None
     return datetime.fromisoformat(original_datetime).astimezone(pytz.timezone('UTC'))
 
 def log_requestexception(feed, e, url):

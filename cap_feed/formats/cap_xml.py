@@ -1,11 +1,15 @@
 import json
-from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, ExpiredAlert
+from cap_feed.models import Admin1, AlertAdmin1, Alert, AlertInfo, AlertInfoParameter, AlertInfoArea, AlertInfoAreaPolygon, AlertInfoAreaCircle, AlertInfoAreaGeocode, ProcessedAlert
 from django.utils import timezone
 from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror, log_valueerror
 from shapely.geometry import Polygon, MultiPolygon
 
-
+def find_and_save(element, ns, tag):
+    x = element.find(tag, ns)
+    if x is not None and x.text:
+        return x.text
+    return None
 
 def get_alert(url, alert_root, feed, ns):
     try:
@@ -21,14 +25,15 @@ def get_alert(url, alert_root, feed, ns):
         if alert.status != 'Actual':
             return alert.url, False
         alert.msg_type = alert_root.find('cap:msgType', ns).text
+        alert.source = find_and_save(alert_root, ns, 'cap:source')
         alert.scope = alert_root.find('cap:scope', ns).text
-        if (x := alert_root.find('cap:restriction', ns)) is not None: alert.restriction = x.text
-        if (x := alert_root.find('cap:addresses', ns)) is not None: alert.addresses = x.text
-        if (x := alert_root.find('cap:references', ns)) is not None: alert.references = x.text
-        if (x := alert_root.find('cap:code', ns)) is not None: alert.code = x.text
-        if (x := alert_root.find('cap:note', ns)) is not None: alert.note = x.text
-        if (x := alert_root.find('cap:references', ns)) is not None: alert.references = x.text
-        if (x := alert_root.find('cap:incidents', ns)) is not None: alert.incidents = x.text
+        alert.restriction = find_and_save(alert_root, ns, 'cap:restriction')
+        alert.addresses = find_and_save(alert_root, ns, 'cap:addresses')
+        alert.references = find_and_save(alert_root, ns, 'cap:references')
+        alert.code = find_and_save(alert_root, ns, 'cap:code')
+        alert.note = find_and_save(alert_root, ns, 'cap:note')
+        alert.references = find_and_save(alert_root, ns, 'cap:references')
+        alert.incidents = find_and_save(alert_root, ns, 'cap:incidents')
 
         alert_has_valid_info = False
         alert_matched_admin1 = False
@@ -36,29 +41,26 @@ def get_alert(url, alert_root, feed, ns):
         for alert_info_entry in alert_root.findall('cap:info', ns):
             alert_info = AlertInfo()
             alert_info.alert = alert
-            if (x := alert_info_entry.find('cap:language', ns)) is not None: alert_info.language = x.text
+            alert_info.language = find_and_save(alert_info_entry, ns, 'cap:language')
             alert_info.category = alert_info_entry.find('cap:category', ns).text
             alert_info.event = alert_info_entry.find('cap:event', ns).text
-            if (x := alert_info_entry.find('cap:responseType', ns)) is not None: alert_info.response_type = x.text
+            alert_info.response_type = find_and_save(alert_info_entry, ns, 'cap:responseType')
             alert_info.urgency = alert_info_entry.find('cap:urgency', ns).text
             alert_info.severity = alert_info_entry.find('cap:severity', ns).text
             alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
-            if (x := alert_info_entry.find('cap:audience', ns)) is not None: alert_info.audience = x.text
+            alert_info.audience = find_and_save(alert_info_entry, ns, 'cap:audience')
             alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
-            if (x := alert_info_entry.find('cap:onset', ns)) is not None: alert_info.onset = convert_datetime(x.text)
-            if (x := alert_info_entry.find('cap:expires', ns)) is not None: alert_info.expires = convert_datetime(x.text)
+            alert_info.onset = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:onset'))
+            alert_info.expires = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:expires'))
             if alert_info.expires < timezone.now():
-                expired_alert = ExpiredAlert()
-                expired_alert.url = alert.url
-                expired_alert.feed = alert.feed
-                expired_alert.save()
                 continue
-            if (x := alert_info_entry.find('cap:senderName', ns)) is not None: alert_info.sender_name = x.text
-            if (x := alert_info_entry.find('cap:headline', ns)) is not None: alert_info.headline = x.text
-            if (x := alert_info_entry.find('cap:description', ns)) is not None: alert_info.description = x.text
-            if (x := alert_info_entry.find('cap:instruction', ns)) is not None: alert_info.instruction = x.text
-            if (x := alert_info_entry.find('cap:web', ns)) is not None: alert_info.web = x.text
-            if (x := alert_info_entry.find('cap:contact', ns)) is not None: alert_info.contact = x.text
+            alert_info.sender_name = find_and_save(alert_info_entry, ns, 'cap:senderName')
+            alert_info.headline = find_and_save(alert_info_entry, ns, 'cap:headline')
+            alert_info.description = find_and_save(alert_info_entry, ns, 'cap:description')
+            alert_info.instruction = find_and_save(alert_info_entry, ns, 'cap:instruction')
+            alert_info.web = find_and_save(alert_info_entry, ns, 'cap:web')
+            alert_info.contact = find_and_save(alert_info_entry, ns, 'cap:contact')
+
             alert.save()
             alert_info.save()
             alert_has_valid_info = True
@@ -76,8 +78,8 @@ def get_alert(url, alert_root, feed, ns):
                 alert_info_area = AlertInfoArea()
                 alert_info_area.alert_info = alert_info
                 alert_info_area.area_desc = alert_info_area_entry.find('cap:areaDesc', ns).text
-                if (x := alert_info_area_entry.find('cap:altitude', ns)) is not None: alert_info_area.altitude = x.text
-                if (x := alert_info_area_entry.find('cap:ceiling', ns)) is not None: alert_info_area.ceiling = x.text
+                alert_info_area_entry.altitude = find_and_save(alert_info_entry, ns, 'cap:altitude')
+                alert_info_area_entry.ceiling = find_and_save(alert_info_entry, ns, 'cap:ceiling')
                 alert_info_area.save()
 
                 # navigate alert info area polygon
@@ -143,7 +145,7 @@ def get_alert(url, alert_root, feed, ns):
 
             alert.info_has_been_added()
             alert.save()
-            return alert.url, True
+            return True
     
     except AttributeError as e:
         log_attributeerror(feed, e, url)
@@ -152,5 +154,10 @@ def get_alert(url, alert_root, feed, ns):
             log_integrityerror(feed, e, url)
     except ValueError as e:
         log_valueerror(feed, e, url)
+    finally:
+        processed_alert = ProcessedAlert()
+        processed_alert.url = alert.url
+        processed_alert.feed = alert.feed
+        processed_alert.save()
 
-    return alert.url, False
+    return False
