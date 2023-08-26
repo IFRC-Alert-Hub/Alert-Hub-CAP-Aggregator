@@ -108,6 +108,8 @@ def get_alert(url, alert_root, feed, ns):
                         else:
                             continue
                         if admin1_polygon.intersects(polygon):
+                            if AlertAdmin1.objects.filter(alert = alert, admin1 = admin1).exists():
+                                continue
                             alert_admin1 = AlertAdmin1()
                             alert_admin1.alert = alert
                             alert_admin1.admin1 = admin1
