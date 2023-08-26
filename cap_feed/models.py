@@ -73,7 +73,7 @@ class LanguageInfo(models.Model):
 
     feed = models.ForeignKey('Feed', on_delete=models.CASCADE)
     name = models.CharField()
-    language = models.CharField(choices=LANGUAGE_CHOICES, default='en')
+    language = models.CharField(blank=True, null=True, choices=LANGUAGE_CHOICES, default='en-US')
     logo = models.CharField(blank=True, null=True)
 
 class Feed(models.Model):
