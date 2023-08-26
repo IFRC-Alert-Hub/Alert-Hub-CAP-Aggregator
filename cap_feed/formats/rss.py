@@ -1,7 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 
-from cap_feed.models import Alert, ExpiredAlert
+from cap_feed.models import Alert, ProcessedAlert
 from cap_feed.formats.cap_xml import get_alert
 from cap_feed.formats.utils import log_requestexception, log_attributeerror, log_valueerror
 
@@ -11,7 +11,7 @@ from cap_feed.formats.utils import log_requestexception, log_attributeerror, log
 def get_alerts_rss(feed, ns):
     alert_urls = set()
     polled_alerts_count = 0
-    valid_poll = True
+    valid_poll = False
 
     # navigate list of alerts
     try:
@@ -23,29 +23,22 @@ def get_alerts_rss(feed, ns):
     for alert_entry in root.find('channel').findall('item'):
         try:
             url = alert_entry.find('link').text
-            # skip if alert has already been identified as expired
-            if ExpiredAlert.objects.filter(url=url).exists():
-                continue
-            # skip if alert already exists
-            if Alert.objects.filter(url=url).exists():
-                alert_urls.add(url)
+            alert_urls.add(url)
+            # skip if alert has been processed before
+            if ProcessedAlert.objects.filter(url=url).exists() or Alert.objects.filter(url=url).exists():
                 continue
             alert_response = requests.get(url)
-        except requests.exceptions.RequestException as e:
-            log_requestexception(feed, e, url)
-            valid_poll = False
-        except AttributeError as e:
-            log_attributeerror(feed, e, url)
-            valid_poll = False
-        except ValueError as e:
-            log_valueerror(feed, e, url)
-            valid_poll = False
-        else:
             # navigate alert
             alert_root = ET.fromstring(alert_response.content)
-            alert_url, polled_alert_count = get_alert(url, alert_root, feed, ns)
+            polled_alert_count = get_alert(url, alert_root, feed, ns)
             polled_alerts_count += polled_alert_count
-            if polled_alert_count:
-                alert_urls.add(alert_url)
+        except requests.exceptions.RequestException as e:
+            log_requestexception(feed, e, url)
+        except AttributeError as e:
+            log_attributeerror(feed, e, url)
+        except ValueError as e:
+            log_valueerror(feed, e, url)
+        else:
+            valid_poll = True
 
     return alert_urls, polled_alerts_count, valid_poll

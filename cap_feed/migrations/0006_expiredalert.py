@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('url', models.CharField(max_length=255, unique=True)),
-                ('expires', models.DateTimeField(default=cap_feed.models.ExpiredAlert.default_expire)),
+                ('expires', models.DateTimeField(default=cap_feed.models.ProcessedAlert.default_expire)),
                 ('feed', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='cap_feed.feed')),
             ],
         ),
