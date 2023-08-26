@@ -78,8 +78,8 @@ def get_alert(url, alert_root, feed, ns):
                 alert_info_area = AlertInfoArea()
                 alert_info_area.alert_info = alert_info
                 alert_info_area.area_desc = alert_info_area_entry.find('cap:areaDesc', ns).text
-                alert_info_area_entry.altitude = find_and_save(alert_info_entry, ns, 'cap:altitude')
-                alert_info_area_entry.ceiling = find_and_save(alert_info_entry, ns, 'cap:ceiling')
+                alert_info_area.altitude = find_and_save(alert_info_entry, ns, 'cap:altitude')
+                alert_info_area.ceiling = find_and_save(alert_info_entry, ns, 'cap:ceiling')
                 alert_info_area.save()
 
                 # navigate alert info area polygon
