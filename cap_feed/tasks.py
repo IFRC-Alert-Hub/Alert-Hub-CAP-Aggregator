@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task
 
-from .models import Alert, AlertInfo, Feed, Country, ExpiredAlert
+from .models import Alert, AlertInfo, Feed, ProcessedAlert
 from django.utils import timezone
 import cap_feed.data_injector as di
 import cap_feed.formats.format_handler as fh
@@ -15,9 +15,7 @@ def poll_feed(self, url):
         feed = Feed.objects.get(url=url)
         if not feed.enable_polling:
             return f"Feed with url {url} is disabled for polling"
-        # additional persisting alerts to not be deleted, mainly for testing
-        alert_urls = set()
-        polled_alerts_count += fh.get_alerts(feed, alert_urls)
+        polled_alerts_count += fh.get_alerts(feed)
     except Feed.DoesNotExist:
         print(f"Feed with url {url} does not exist")
     return f"polled {polled_alerts_count} alerts"
@@ -34,7 +32,7 @@ def remove_expired_alerts(self):
 @shared_task(bind=True)
 def remove_expired_alert_records(self):
     # Remove records of expired alerts
-    ExpiredAlert.objects.filter(expires__lt=timezone.now()).delete()
+    ProcessedAlert.objects.filter(expires__lt=timezone.now()).delete()
     return f"removed records of expired alerts"
 
 @shared_task(bind=True)

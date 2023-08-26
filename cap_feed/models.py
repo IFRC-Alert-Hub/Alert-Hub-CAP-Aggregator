@@ -125,7 +125,7 @@ class Feed(models.Model):
             update_task(self, self.__old_url, self.__old_polling_interval)
         super(Feed, self).save(force_insert, force_update, *args, **kwargs)
 
-class ExpiredAlert(models.Model):
+class ProcessedAlert(models.Model):
     # Set expire time to 1 week
     def default_expire():
         return timezone.now() + timedelta(weeks=1)
@@ -170,14 +170,14 @@ class Alert(models.Model):
     sent = models.DateTimeField()
     status = models.CharField(choices = STATUS_CHOICES)
     msg_type = models.CharField(choices = MSG_TYPE_CHOICES)
-    source = models.CharField(blank=True, default='')
-    scope = models.CharField(choices = SCOPE_CHOICES)
-    restriction = models.CharField(blank=True, default='')
-    addresses = models.TextField(blank=True, default='')
-    code = models.CharField(blank=True, default='')
-    note = models.TextField(blank=True, default='')
-    references = models.TextField(blank=True, default='')
-    incidents = models.TextField(blank=True, default='')
+    source = models.CharField(blank=True, null=True, default=None)
+    scope = models.CharField(blank=True, null=True, default=None)
+    restriction = models.CharField(blank=True, null=True, default=None)
+    addresses = models.TextField(blank=True, null=True, default=None)
+    code = models.CharField(blank=True, null=True, default=None)
+    note = models.TextField(blank=True, null=True, default=None)
+    references = models.TextField(blank=True, null=True, default=None)
+    incidents = models.TextField(blank=True, null=True, default=None)
 
     __all_info_added = None
 
@@ -193,61 +193,10 @@ class Alert(models.Model):
 
     def all_info_are_added(self):
         return self.__all_info_added
-
-    # This method will be used for serialization of alert object to be cached into Redis.
-    def to_dict(self):
-        alert_dict = dict()
-        alert_dict['url'] = self.url
-        alert_dict['identifier'] = self.identifier
-        alert_dict['source'] = self.source
-        alert_dict['country'] = self.country.name
-        alert_dict['iso3'] = self.country.iso3
-
-        info_list = []
-        for info in self.infos.all():
-            info_list.append(info.to_dict())
-        alert_dict['info'] = info_list
-        return alert_dict
-
-    # This method will be used for serialization of alert object to be transferred by websocket.
-    def alert_to_be_transferred_to_dict(self):
-        alert_dict = dict()
-        alert_dict['url'] = self.url
-        alert_dict['country_name'] = self.country.name
-        alert_dict['country_id'] = self.country.id
-        alert_dict['feed_url'] = self.feed.url
-        alert_dict['scope'] = self.scope
-
-        first_info = self.infos.first()
-        if first_info != None:
-            alert_dict['urgency'] = first_info.urgency
-            alert_dict['severity'] = first_info.severity
-            alert_dict['certainty'] = first_info.certainty
-
-        info_list = []
-        for info in self.infos.all():
-            info_list.append(info.alert_info_to_be_transferred_to_dict())
-        alert_dict['info'] = info_list
-
-        return alert_dict
     
 class AlertAdmin1(models.Model):
     alert = models.ForeignKey(Alert, on_delete=models.CASCADE)
     admin1 = models.ForeignKey(Admin1, on_delete=models.CASCADE)
-
-class AlertCacheEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Alert):
-            return obj.to_dict()
-
-        return super().default(obj)
-
-class AlertTransferEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Alert):
-            return obj.alert_to_be_transferred_to_dict()
-
-        return super().default(obj)
     
 class AlertInfo(models.Model):
     # To dynamically set default expire time
@@ -310,58 +259,26 @@ class AlertInfo(models.Model):
     language = models.CharField(blank=True, default='en-US')
     category = models.CharField(choices = CATEGORY_CHOICES)
     event = models.CharField()
-    response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, blank=True, default='')
+    response_type = models.CharField(choices = RESPONSE_TYPE_CHOICES, blank=True, null=True, default=None)
     urgency = models.CharField(choices = URGENCY_CHOICES)
     severity = models.CharField(choices = SEVERITY_CHOICES)
     certainty = models.CharField(choices = CERTAINTY_CHOICES)
-    audience = models.CharField(blank=True, default='')
-    event_code = models.CharField(blank=True, default='')
+    audience = models.CharField(blank=True, null=True, default=None)
+    event_code = models.CharField(blank=True, null=True, default=None)
     #effective = models.DateTimeField(default=Alert.objects.get(pk=alert).sent)
     effective = models.DateTimeField(blank=True, default=timezone.now)
     onset = models.DateTimeField(blank=True, null=True)
-    expires = models.DateTimeField(blank=True, default=default_expire)
-    sender_name = models.CharField(blank=True, default='')
-    headline = models.CharField(blank=True, default='')
+    expires = models.DateTimeField(blank=True, null=True, default=default_expire)
+    sender_name = models.CharField(blank=True, null=True, default=None)
+    headline = models.CharField(blank=True, null=True, default=None)
     description = models.TextField(blank=True, null=True, default=None)
     instruction = models.TextField(blank=True, null=True, default=None)
-    web = models.URLField(blank=True, null=True)
-    contact = models.CharField(blank=True, default='')
-    parameter = models.CharField(blank=True, default='')
+    web = models.URLField(blank=True, null=True, default=None)
+    contact = models.CharField(blank=True, null=True, default=None)
+    parameter = models.CharField(blank=True, null=True, default=None)
 
     def __str__(self):
         return str(self.alert) + ' ' + self.language
-
-    def to_dict(self):
-        alert_info_dict = dict()
-        alert_info_dict['language'] = self.language
-        alert_info_dict['category'] = self.category
-        alert_info_dict['event'] = self.event
-        alert_info_dict['urgency'] = self.urgency
-        alert_info_dict['severity'] = self.severity
-        alert_info_dict['certainty'] = self.certainty
-        alert_info_dict['expires'] = str(self.expires)
-        alert_info_dict['sender_name'] = self.sender_name
-        alert_info_dict['headline'] = self.headline
-        alert_info_dict['description'] = self.description
-        alert_info_dict['instruction'] = self.instruction
-
-        area_set = self.alertinfoarea_set.all()
-        area_list = []
-        for area in area_set:
-            area_list.append(area.to_dict())
-        if len(area_list) != 0:
-            alert_info_dict['area'] = area_list
-
-        return alert_info_dict
-
-    def alert_info_to_be_transferred_to_dict(self):
-        alert_info_dict = dict()
-        alert_info_dict['language'] = self.language
-        alert_info_dict['category'] = self.category
-        alert_info_dict['headline'] = self.headline
-        alert_info_dict['description'] = self.description
-        alert_info_dict['instruction'] = self.instruction
-        return alert_info_dict
 
 class AlertInfoParameter(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
@@ -379,40 +296,11 @@ class AlertInfoArea(models.Model):
     alert_info = models.ForeignKey(AlertInfo, on_delete=models.CASCADE)
 
     area_desc = models.TextField()
-    altitude = models.CharField(blank=True, default='')
-    ceiling = models.CharField(blank=True, default='')
+    altitude = models.CharField(blank=True, null=True, default=None)
+    ceiling = models.CharField(blank=True, null=True, default=None)
 
     def __str__(self):
         return str(self.alert_info) + ' ' + self.area_desc
-
-    def to_dict(self):
-        alert_info_area_dict = dict()
-        alert_info_area_dict['area_desc'] = self.area_desc
-        alert_info_area_dict['altitude'] = self.altitude
-        alert_info_area_dict['ceiling'] = self.ceiling
-
-        area_polygon_set = self.alertinfoareapolygon_set.all()
-        area_polygon_list = []
-        for area_polygon in area_polygon_set:
-            area_polygon_list.append(area_polygon.to_dict())
-        if len(area_polygon_list) != 0:
-            alert_info_area_dict['polygon'] = area_polygon_list
-
-        area_circle_set = self.alertinfoareacircle_set.all()
-        area_circle_list = []
-        for area_circle in area_circle_set:
-            area_circle_list.append(area_circle.to_dict())
-        if len(area_circle_list) != 0:
-            alert_info_area_dict['circle'] = area_circle_list
-
-        area_geocode_set = self.alertinfoareageocode_set.all()
-        area_geocode_list = []
-        for area_geocode in area_geocode_set:
-            area_geocode_list.append(area_geocode.to_dict())
-        if len(area_geocode_list) != 0:
-            alert_info_area_dict['geocode'] = area_geocode_list
-
-        return alert_info_area_dict
 
 class AlertInfoAreaPolygon(models.Model):
     alert_info_area = models.ForeignKey(AlertInfoArea, on_delete=models.CASCADE)

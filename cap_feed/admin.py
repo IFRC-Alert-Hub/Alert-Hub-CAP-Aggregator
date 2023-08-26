@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Alert, AlertInfo, AlertAdmin1, Continent, Region, Country, Admin1, LanguageInfo, Feed, FeedLog
+from .models import Alert, AlertInfo, AlertAdmin1, Continent, Region, Country, Admin1, LanguageInfo, Feed, FeedLog, ProcessedAlert
 from django_celery_beat.models import CrontabSchedule, ClockedSchedule, SolarSchedule, IntervalSchedule, PeriodicTask
 from django_celery_results.models import TaskResult, GroupResult
 
@@ -93,6 +93,12 @@ class AlertAdmin1Admin(admin.ModelAdmin):
     list_filter = ["alert__country", "admin1"]
     search_fields = ["alert__url", "admin1__name"]
 
+class ProcessedAlertAdmin(admin.ModelAdmin):
+    list_display = ["url", "feed"]
+    list_filter = ["feed"]
+    search_fields = ["url"]
+
+admin.site.register(ProcessedAlert, ProcessedAlertAdmin)
 admin.site.register(Alert, AlertAdmin)
 admin.site.register(Continent)
 admin.site.register(Region)
