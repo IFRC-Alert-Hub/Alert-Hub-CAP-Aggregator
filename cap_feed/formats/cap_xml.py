@@ -41,7 +41,7 @@ def get_alert(url, alert_root, feed, ns):
         for alert_info_entry in alert_root.findall('cap:info', ns):
             alert_info = AlertInfo()
             alert_info.alert = alert
-            alert_info.language = find_and_save(alert_info_entry, ns, 'cap:language')
+            alert_info.language = 'en-US' if (x := alert_info_entry.find('cap:language', ns)) is None else x.text
             alert_info.category = alert_info_entry.find('cap:category', ns).text
             alert_info.event = alert_info_entry.find('cap:event', ns).text
             alert_info.response_type = find_and_save(alert_info_entry, ns, 'cap:responseType')
