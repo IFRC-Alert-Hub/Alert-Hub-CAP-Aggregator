@@ -51,9 +51,11 @@ def get_alert(url, alert_root, feed, ns):
             alert_info.audience = find_and_save(alert_info_entry, ns, 'cap:audience')
             alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
             alert_info.onset = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:onset'))
-            alert_info.expires = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:expires'))
-            if alert_info.expires < timezone.now():
-                continue
+            expire_time = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:expires'))
+            if expire_time is not None:
+                alert_info.expires = expire_time
+                if alert_info.expires < timezone.now():
+                    continue
             alert_info.sender_name = find_and_save(alert_info_entry, ns, 'cap:senderName')
             alert_info.headline = find_and_save(alert_info_entry, ns, 'cap:headline')
             alert_info.description = find_and_save(alert_info_entry, ns, 'cap:description')
