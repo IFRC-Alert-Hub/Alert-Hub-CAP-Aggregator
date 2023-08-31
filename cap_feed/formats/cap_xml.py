@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from cap_feed.formats.utils import convert_datetime, log_attributeerror, log_integrityerror, log_valueerror
 from shapely.geometry import Polygon, MultiPolygon
 
-def find_and_save(element, ns, tag):
+def find_element(element, ns, tag):
     x = element.find(tag, ns)
     if x is not None and x.text:
         return x.text
@@ -25,15 +25,15 @@ def get_alert(url, alert_root, feed, ns):
         if alert.status != 'Actual':
             return alert.url, False
         alert.msg_type = alert_root.find('cap:msgType', ns).text
-        alert.source = find_and_save(alert_root, ns, 'cap:source')
+        alert.source = find_element(alert_root, ns, 'cap:source')
         alert.scope = alert_root.find('cap:scope', ns).text
-        alert.restriction = find_and_save(alert_root, ns, 'cap:restriction')
-        alert.addresses = find_and_save(alert_root, ns, 'cap:addresses')
-        alert.references = find_and_save(alert_root, ns, 'cap:references')
-        alert.code = find_and_save(alert_root, ns, 'cap:code')
-        alert.note = find_and_save(alert_root, ns, 'cap:note')
-        alert.references = find_and_save(alert_root, ns, 'cap:references')
-        alert.incidents = find_and_save(alert_root, ns, 'cap:incidents')
+        alert.restriction = find_element(alert_root, ns, 'cap:restriction')
+        alert.addresses = find_element(alert_root, ns, 'cap:addresses')
+        alert.references = find_element(alert_root, ns, 'cap:references')
+        alert.code = find_element(alert_root, ns, 'cap:code')
+        alert.note = find_element(alert_root, ns, 'cap:note')
+        alert.references = find_element(alert_root, ns, 'cap:references')
+        alert.incidents = find_element(alert_root, ns, 'cap:incidents')
 
         alert_has_valid_info = False
         alert_matched_admin1 = False
@@ -44,24 +44,24 @@ def get_alert(url, alert_root, feed, ns):
             alert_info.language = 'en-US' if (x := alert_info_entry.find('cap:language', ns)) is None else x.text
             alert_info.category = alert_info_entry.find('cap:category', ns).text
             alert_info.event = alert_info_entry.find('cap:event', ns).text
-            alert_info.response_type = find_and_save(alert_info_entry, ns, 'cap:responseType')
+            alert_info.response_type = find_element(alert_info_entry, ns, 'cap:responseType')
             alert_info.urgency = alert_info_entry.find('cap:urgency', ns).text
             alert_info.severity = alert_info_entry.find('cap:severity', ns).text
             alert_info.certainty = alert_info_entry.find('cap:certainty', ns).text
-            alert_info.audience = find_and_save(alert_info_entry, ns, 'cap:audience')
+            alert_info.audience = find_element(alert_info_entry, ns, 'cap:audience')
             alert_info.effective = alert.sent if (x := alert_info_entry.find('cap:effective', ns)) is None else x.text
-            alert_info.onset = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:onset'))
-            expire_time = convert_datetime(find_and_save(alert_info_entry, ns, 'cap:expires'))
+            alert_info.onset = convert_datetime(find_element(alert_info_entry, ns, 'cap:onset'))
+            expire_time = convert_datetime(find_element(alert_info_entry, ns, 'cap:expires'))
             if expire_time is not None:
                 alert_info.expires = expire_time
                 if alert_info.expires < timezone.now():
                     continue
-            alert_info.sender_name = find_and_save(alert_info_entry, ns, 'cap:senderName')
-            alert_info.headline = find_and_save(alert_info_entry, ns, 'cap:headline')
-            alert_info.description = find_and_save(alert_info_entry, ns, 'cap:description')
-            alert_info.instruction = find_and_save(alert_info_entry, ns, 'cap:instruction')
-            alert_info.web = find_and_save(alert_info_entry, ns, 'cap:web')
-            alert_info.contact = find_and_save(alert_info_entry, ns, 'cap:contact')
+            alert_info.sender_name = find_element(alert_info_entry, ns, 'cap:senderName')
+            alert_info.headline = find_element(alert_info_entry, ns, 'cap:headline')
+            alert_info.description = find_element(alert_info_entry, ns, 'cap:description')
+            alert_info.instruction = find_element(alert_info_entry, ns, 'cap:instruction')
+            alert_info.web = find_element(alert_info_entry, ns, 'cap:web')
+            alert_info.contact = find_element(alert_info_entry, ns, 'cap:contact')
 
             alert.save()
             alert_info.save()
@@ -80,19 +80,20 @@ def get_alert(url, alert_root, feed, ns):
                 alert_info_area = AlertInfoArea()
                 alert_info_area.alert_info = alert_info
                 alert_info_area.area_desc = alert_info_area_entry.find('cap:areaDesc', ns).text
-                alert_info_area.altitude = find_and_save(alert_info_entry, ns, 'cap:altitude')
-                alert_info_area.ceiling = find_and_save(alert_info_entry, ns, 'cap:ceiling')
+                alert_info_area.altitude = find_element(alert_info_entry, ns, 'cap:altitude')
+                alert_info_area.ceiling = find_element(alert_info_entry, ns, 'cap:ceiling')
                 alert_info_area.save()
 
                 # navigate alert info area polygon
                 polygons = []
                 for alert_info_area_polygon_entry in alert_info_area_entry.findall('cap:polygon', ns):
-                    alert_info_area_polygon = AlertInfoAreaPolygon()
-                    alert_info_area_polygon.alert_info_area = alert_info_area
-                    alert_info_area_polygon.value = alert_info_area_polygon_entry.text
-                    alert_info_area_polygon.save()
-                    points = [point.split(',') for point in alert_info_area_polygon_entry.text.strip().split(' ')]
-                    polygons.append(Polygon([[point[1],point[0]] for point in points]))
+                    if alert_info_area_polygon_entry is not None and alert_info_area_polygon_entry.text:
+                        alert_info_area_polygon = AlertInfoAreaPolygon()
+                        alert_info_area_polygon.alert_info_area = alert_info_area
+                        alert_info_area_polygon.value = alert_info_area_polygon_entry.text
+                        alert_info_area_polygon.save()
+                        points = [point.split(',') for point in alert_info_area_polygon_entry.text.strip().split(' ')]
+                        polygons.append(Polygon([[point[1],point[0]] for point in points]))
 
                 # check polygon intersection with admin1s
                 for polygon in polygons:

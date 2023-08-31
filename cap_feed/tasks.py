@@ -18,7 +18,7 @@ def poll_feed(self, url):
         polled_alerts_count += fh.get_alerts(feed)
     except Feed.DoesNotExist:
         print(f"Feed with url {url} does not exist")
-    return f"polled {polled_alerts_count} alerts"
+    return f"polled {polled_alerts_count} alerts from {feed.url}"
 
 @shared_task(bind=True)
 def remove_expired_alerts(self):
