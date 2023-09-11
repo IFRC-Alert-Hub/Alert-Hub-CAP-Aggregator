@@ -14,7 +14,7 @@ pip-chill==1.0.3
 promise==2.3
 psycopg2-binary==2.9.6
 pyopenssl==23.2.0
-pytz==2023.3
+pytz==2023.3.post1
 python-dotenv==1.0.0
 service-identity==23.1.0
 shapely==2.0.1
