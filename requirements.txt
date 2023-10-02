@@ -1,5 +1,5 @@
 aniso8601==9.0.1
-azure-storage-blob==12.17.0
+azure-storage-blob==12.18.2
 channels-redis==4.1.0
 daphne==4.0.0
 django-celery-beat==2.5.0
