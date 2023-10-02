@@ -12,7 +12,7 @@ greenlet==2.0.2
 iso639-lang==2.1.0
 pip-chill==1.0.3
 promise==2.3
-psycopg2-binary==2.9.6
+psycopg2-binary==2.9.8
 pyopenssl==23.2.0
 pytz==2023.3
 python-dotenv==1.0.0
